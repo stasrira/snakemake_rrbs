@@ -146,6 +146,12 @@ rules:
         # single_host: True
         memory: 1000
         walltime: "2:00"
+    bismark_chr_info:
+        threads: 4
+        single_host: True
+        memory: 1200
+        walltime: "2:00"
+    
     UMI_attach_R1:
         memory: 20000
         single_host: True

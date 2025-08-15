@@ -594,6 +594,7 @@ rule all:
             sample=samples_to_process),
         # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
         bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}/{sample}_report.html"), sample=samples_to_process),
+        bismark_chr_info = expand(str(Path(data_path) / "bismark/chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
         
         # spladder_single_graphs_count_file = expand(str(Path(data_path) / "spladder/spladder/genes_graph_conf3.{sample}_Aligned.sortedByCoord.out.count.hdf5"), sample=samples_to_process) if run_spladder else [],
         # spladder_alignments = str(Path(data_path) / "spladder/alignments.txt") if run_spladder else [],
@@ -751,6 +752,8 @@ rule bismark_sort:
         str(Path(data_path) / "logs/bismark_sort/bismark_sort_{sample}.log")
     threads: get_rule_threads ('bismark_sort')
     resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_sort'),
+        walltime = get_rule_walltime('bismark_sort'),
         cl_job_suffix = lambda wildcards : wildcards.sample,
     params:
         # tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark/tmp_{sample}"))),
@@ -906,6 +909,31 @@ rule bismark_report:
         
         bismark2report -o "{output.html}" -a "{input.align_report}" 2>&1 | tee {log}
         '''
+        # echo 'OK' > {output.ok_file}
+
+rule bismark_chr_info:
+    input: 
+        dedup_bam = \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
+    output:
+        chr_info = str(Path(data_path) / "bismark/chr_info/{sample}_chr_info.txt"),
+        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"),
+    conda:
+        get_conda_env('bismark'),
+    log:
+        str(Path(data_path) / "logs/bismark_chr_info/bismark_chr_info_{sample}.log"),
+    threads: get_rule_threads ('bismark_chr_info')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_chr_info'),
+        walltime = get_rule_walltime('bismark_chr_info'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    shell:
+        '''
+        samtools view {input.dedup_bam}|cut -f 3|sort |uniq -c > {output.chr_info} 2>&1 | tee {log}
+        '''
+        # samtools view $bam|cut -f 3|sort |uniq -c > chr_info/${SID}.txt
         # echo 'OK' > {output.ok_file}
 
 if samples_R1R2_present:
