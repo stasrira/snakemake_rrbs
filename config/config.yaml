@@ -71,9 +71,9 @@ file_type_groups:
 
 # send email default parameters
 email:
-    email_subject: "Bulk RNAseq & Alternative Splicing pipeline completed {}"
-    email_body_success_template: 'Successful completion of the RNAseq & Alternative Splicing pipeline for {} samples with the data_path: {}. Log file for the execution is located at: {} (size: |log_size|). Attached are log, info and warning files from the run. Note: files over {} MB in size will not be attached to the email.'
-    email_body_error_template: 'Errors were reported during execution of the RNAseq & Alternative Splicing pipeline{} with the data_path: {}. The log file for the execution is located at: {}. Note: log files over {} MB in size will not be attached to the email.'
+    email_subject: "RRBS pipeline completed {}"
+    email_body_success_template: 'Successful completion of the RRBS pipeline for {} samples with the data_path: {}. Log file for the execution is located at: {} (size: |log_size|). Attached are log, info and warning files from the run. Note: files over {} MB in size will not be attached to the email.'
+    email_body_error_template: 'Errors were reported during execution of the RRBS pipeline{} with the data_path: {}. The log file for the execution is located at: {}. Note: log files over {} MB in size will not be attached to the email.'
     email_attachment_max_size: 10 # in MB
 
 # list of conda environments used by the pipeline
@@ -125,7 +125,7 @@ rules:
         memory: 15000
         walltime: "48:00"
     bismark_sort:
-        threads: 12
+        threads: 4
         single_host: True
         memory: 2000
         # walltime: "24:00"
@@ -135,7 +135,7 @@ rules:
         memory: 4000
     bismark_dedup:
         memory: 2000
-        walltime: "4:00"
+        walltime: "2:00"
     bismark_methylation_extractor:
         # threads: 4
         single_host: True
@@ -144,7 +144,7 @@ rules:
     bismark_report:
         # threads: 4
         # single_host: True
-        memory: 2000
+        memory: 1000
         walltime: "2:00"
     UMI_attach_R1:
         memory: 20000

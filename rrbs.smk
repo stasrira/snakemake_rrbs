@@ -581,20 +581,19 @@ rule all:
         # ds_cluster_significance = str(Path(data_path) / ("leafcutter/ds/leafcutter_ds_cluster_significance.txt")) if run_leafcutter else [],
 
         # bismark_ok_file = expand(str(Path(data_path) / "bismark/{sample}_ok.txt"), sample=samples_to_process),
-        bismark_bam_out = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam"), sample=samples_to_process) if samples_R1R2_present else expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
+        # bismark_bam_out = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam"), sample=samples_to_process) if samples_R1R2_present else expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
         # bismark_sort_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_sort_ok.txt"), sample=samples_to_process),
-        # this row will be in use only when I1 files are present
-        bismark_pre_dup_bam_umi = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe_umi.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_umi.bam"), sample=samples_to_process) if samples_R1I1_present else [],
-        bismark_dedup_txt = expand(str(Path(data_path) / "bismark/{sample}_dedup.txt"), sample=samples_to_process),
-        # bismark_methylation_extractor_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_methylation_extractor_ok.txt"), sample=samples_to_process),
+        # bismark_pre_dup_bam_umi = expand(str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
+        # bismark_dedup_txt = expand(str(Path(data_path) / "bismark/{sample}/{sample}_dedup.txt"), sample=samples_to_process),
+        # bismark_methylation_extractor_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"), sample=samples_to_process),
         bismark_methylation_extractor_CHG_context = \
             expand( \
-            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"), \
+            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"), \
             sample=samples_to_process),
-        # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
-        bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}_report.html"), sample=samples_to_process),
+        # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
+        bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}/{sample}_report.html"), sample=samples_to_process),
         
         # spladder_single_graphs_count_file = expand(str(Path(data_path) / "spladder/spladder/genes_graph_conf3.{sample}_Aligned.sortedByCoord.out.count.hdf5"), sample=samples_to_process) if run_spladder else [],
         # spladder_alignments = str(Path(data_path) / "spladder/alignments.txt") if run_spladder else [],
@@ -702,12 +701,12 @@ rule bismark:
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
     output:
         # ok_file = str(Path(data_path) / "bismark/{sample}_ok.txt")
-        """        
-        Temporarily commemnted to avoid re-runing "bismark" step
+        # """        
+        # Temporarily commemnted to avoid re-runing "bismark" step
         tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark/tmp_{sample}"))),
         bam = temp_debugcheck(str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam")),
         align_report= str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"),
-        """
+        # """
     conda:
         get_conda_env('bismark'),
     log:
@@ -801,15 +800,15 @@ rule bismark_dedup:
             if samples_R1I1_present else \
             (str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam")),
     output:
-        #(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe_umi.deduplicated.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_umi.deduplicated.bam")) \
-        #    if samples_R1I1_present else \
         dedup_bam = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bam"),
-        #(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe_umi.deduplication_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_umi.deduplication_report.txt")) \
-        #    if samples_R1I1_present else \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
         dedup_report = \
-            (str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplication_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplication_report.txt")),
-        dedup_txt = str(Path(data_path) / "bismark/{sample}_dedup.txt"),
+            (str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplication_report.txt") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplication_report.txt")),
+        dedup_txt = str(Path(data_path) / "bismark/{sample}/{sample}_dedup.txt"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -833,37 +832,39 @@ rule bismark_dedup:
 rule bismark_methylation_extractor:
     input: 
         dedup_bam = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bam"),
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
     output:
         CHG_context = \
-            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         CHH_context = \
-            str(Path(data_path) / "bismark/CHH_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/{sample}/CHH_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/CHH_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/{sample}/CHH_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         CpG_context = \
-            str(Path(data_path) / "bismark/CpG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/{sample}/CpG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/CpG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/{sample}/CpG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         M_bias = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.M-bias.txt") \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.M-bias.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.M-bias.txt"),
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.M-bias.txt"),
         splitting_report = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated_splitting_report.txt") \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated_splitting_report.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated_splitting_report.txt"),
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated_splitting_report.txt"),
         bedGraph = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bedGraph.gz") \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bedGraph.gz") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bedGraph.gz"),
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bedGraph.gz"),
         bismark_cov = \
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bismark.cov.gz") \
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bismark.cov.gz") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bismark.cov.gz"),
-        # ok_file = str(Path(data_path) / "bismark/{sample}_bismark_methylation_extractor_ok.txt"),
+            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bismark.cov.gz"),
+        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -888,8 +889,8 @@ rule bismark_report:
             if samples_R1R2_present else \
             str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"),
     output:
-        # ok_file = str(Path(data_path) / "bismark/{sample}_bismark_report_ok.txt"),
-        html = str(Path(data_path) / "bismark/{sample}_report.html"),
+        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"),
+        html = str(Path(data_path) / "bismark/{sample}/{sample}_report.html"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -899,8 +900,6 @@ rule bismark_report:
         cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_report'),
         walltime = get_rule_walltime('bismark_report'),
         cl_job_suffix = lambda wildcards : wildcards.sample,
-    params:
-        # html = str(Path(data_path) / "bismark/{sample}_report.html"),
     shell:
         '''
         cd "$(dirname "{output.html}")"  # get to the parent dir of the output file
