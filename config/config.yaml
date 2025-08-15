@@ -1,0 +1,371 @@
+# the following global conifg variable are being used across different rules
+debug: False # this variable defines if "temp" objects will be marked as temp and deleted. If set to True, temp objects won't be marked as temp and won't be deleted. False is default.
+help: False # if set to True, it will display help instructions and print out all config variables and their defaut values
+data_path: # /sc/arion/projects/sealfs01a/stas/local/snakemake_alternative_splicing/data_to_process
+data_path_required_folders: ['fastq_raw']
+raw_data_file_ext: ".fastq.gz"  # leading dot is required
+samplesToIgnore: # by default no samples will be ignored
+ref_data_path: /sc/arion/projects/sealfs01a/german/refdata/
+motrpac_ref_data: motrpac_refdata
+motrpac_ref_data_genom_dir: hg38_gencode_v30
+alt_sl_ref_data: AS
+alt_sl_ref_data_genom_dir: # if no value provided, the value of "motrpac_ref_data_genom_dir" will be used
+# run_alternative_splicing: True # if not set to True, all AS steps will be skipped
+# run_rsem: True # if not set to True, all RSEM steps will be skipped
+# run_rmats_turbo: False  # if it is set to True rmats_turbo tool will be used instead of the standard rmats tool. Otherwise the standard rmats tool is used
+# run_rmats_novel: False  # if it is set to True "--novelSS" argument will be included to the rmats command line. Default value is False.
+# run_leafcutter: False  # if not set to True, all leafcutter related steps will be skipped
+# run_spladder: True  # if not set to True, all spladder related steps will be skipped 
+# run_djexpress: True  # if not set to True, all djexpress related steps will be skipped
+# run_spladder_long_execution_events: False  # if not set to True, only limited list of events (outlined in the spladder_events variable in this config) will be used. If set to True, spladder events from spladder_events_long_execution variable will be executed.
+# run_ngscheckmate: True  # set to False to skip NGSCheckMate related rules. Default: True
+# run_feature_counts: False  # if set to True, featureCounts rule will be executed and its outcome will be included to the multiqc_post_align rule outcome
+# run_telescope: True  # if set to True, telescope related rules will be included into the pipeline execution
+
+create_rds_for_rscripts: False  # if set to True, an RDS file will be created for testing participating rules utilizing R scripts
+leafcutter_library_strandedness: XS  # possible values XS, FR; used for intronMotifBAM2junc and leafcutter_cluster_regtools rules
+leafcutter_contrast_db_mapping_code: "primary_contrast"  # mapping code used to retriev contrast value from DB
+leafcutter_contrast_group_count_min: 4  # minimum number of items in a leafcutter contrast group
+
+# metadata_db_study_id: # int value is expected. If set to None (default), default study_id will be identified automatically based on aliquot_id assignments in the DB. If a specific id is given, it will be used to retrive data from the database.
+# metadata_db_center_id: # int value is expected. If set to None (default), default center_id will be identified automatically based on aliquot_id assignments in the DB. If a specific id is given, it will be used to retrive data from the database.
+
+# python2_path: "/sc/arion/projects/sealfs01a/stas/conda/local_envs/snakemake3_py2/bin/python"
+conda_envs_path: /sc/arion/projects/sealfs01a/stas/conda/local_envs
+# python2_env_name: "" # keep blank to force snakemake to create an environment dynamically or reuse the previously created one # snakemake3_mamba4_py2  # "6f36a259f377df6a183ab7c1b570d601_"  # snakemake3_mamba4_py2_GN  
+# python2_env_config: conda_envs/ngscheckmate_python2.yml
+print_prerun_info: True  # if set to True (default) the collected prerun info will be printed to stdout. If set to False, no printing will be done - this is required to print the DAG diagram
+pipeline_info_file: "pipeline_info.txt"
+pipeline_warning_file: "pipeline_warning.txt"
+
+# defines file types expected by the workflow
+file_types: 
+    - {name: R1, required: True}  # R1
+    - {name: R2, required: False}  # R2
+    - {name: I1, required: False}  # I1
+
+# defines file type groups that are used in the workflow
+file_type_groups:
+    R1R2: ['R1', 'R2']
+    R1I1: ['R1', 'I1']
+    
+# suppa_events: ['A3', 'A5', 'RI', 'SE']
+# suppa_file_ext: ['txt'] # ['txt', 'pkl']
+# # suppa_events_compiled_file_ext: ['pkl', 'pkl', 'pkl', 'txt']
+# rmats_events: ['A3SS', 'A5SS', 'RI', 'SE']  # 'MXE'
+# rmats_file_ext: ['txt'] # ['txt', 'pkl']
+# # rmats_events_compiled_file_ext: ['txt', 'txt', 'txt', 'txt']
+# spladder_events: ['exon_skip','intron_retention','alt_3prime','alt_5prime','mutex_exons']  # all members of this list should have 2 parts separated by the underscore
+# spladder_events_long_execution: ['mult_exon_skip']  # all members of this list should have 3 parts separated by the underscore
+# spladder_chunk_size: 2 
+# spladder_events_ase_edge_limit: 500  # (default value is 500) it is used for spladder_call_events and spladder_call_events_long_execution rules
+# spladder_events_ase_edge_limit_min: 300 # minimum ase_edge_limit value that can be accepted from a user
+# spladder_events_ase_edge_limit_decrease_step: 100 # value to be used to decrease the ase_edge_limit for rerun attempts of the spladder_call_event rule
+
+# rmats metadata contrast file related
+# rmats contrast file is expected to have 2 columns with the first one containing sample ids and the second containing 1 for b1 assignment and 2 for b2 assignment
+# rmats_contrast_file: metadata/rmats_contrast.tsv  # expected location of the rmats contrast metadata file
+# rmats_default_contrast: b1
+# rmats_min_b1_qty: 2 # 2
+# rmats_min_b2_qty: 2 # 2
+
+# send email default parameters
+email:
+    email_subject: "Bulk RNAseq & Alternative Splicing pipeline completed {}"
+    email_body_success_template: 'Successful completion of the RNAseq & Alternative Splicing pipeline for {} samples with the data_path: {}. Log file for the execution is located at: {} (size: |log_size|). Attached are log, info and warning files from the run. Note: files over {} MB in size will not be attached to the email.'
+    email_body_error_template: 'Errors were reported during execution of the RNAseq & Alternative Splicing pipeline{} with the data_path: {}. The log file for the execution is located at: {}. Note: log files over {} MB in size will not be attached to the email.'
+    email_attachment_max_size: 10 # in MB
+
+# list of conda environments used by the pipeline
+conda_envs:
+    main_tools: 'conda_envs/main_tools_py3.yml'
+    bismark: 'conda_envs/bismark.yml'
+    # rmats: 'conda_envs/rmats.yml'
+    # rmats_turbo: 'conda_envs/rmats_turbo.yml'
+    # leafcutter: 'conda_envs/leafcutter_py2.yml'
+    python2: 'conda_envs/ngscheckmate_python2.yml'
+    multiqc: 'conda_envs/multiqc.yml'  # multiqc_1.14.yml 
+    cutadapt: 'conda_envs/cutadapt.yml'  # 'conda_envs/main_tools_py3_original.yml'  # 'conda_envs/cutadapt.yml'
+    # telescope: 'conda_envs/telescope_notiterable_fix.yml'  # contains installation of telescope ran from a fork of main project with a fix of the issue
+    
+resources:
+    # the maximum memory to be allocated for any rule with dynamically increased memory based on the attempt number
+    max_memory: 350000 # 350GB
+    max_himem: 1400000 # 1.4 TB
+    regular_queue: "premium"  # name of the LSF queue for regular steps
+    long_queue: "long"  # name of the LSF queue for long running steps
+    max_regular_walltime: 144  # hours
+    max_long_walltime: 336  # hours
+    min_walltime: 24  # minimum walltime value to be used despite the sample count
+
+database:
+    connection:
+        mdb_conn_str: Driver=|db_driver|;Server=|server|;Database=|db_name|;UID=|db_user_name|;PWD=|db_user_pwd|;TrustServerCertificate=yes;  # Encrypt=no; TrustServerCertificate=yes;
+        env_db_driver: SNAKEMAKE_DB_DRIVER  # name of the environment variable where from to get the value
+        env_db_server: SNAKEMAKE_DB_SERVER  # name of the environment variable where from to get the value
+        env_db_name: SNAKEMAKE_DB_DATABASE  # name of the environment variable where from to get the value
+        env_db_user_name: SNAKEMAKE_DB_USER  # name of the environment variable where from to get the value
+        env_db_user_pwd: SNAKEMAKE_DB_PWD  # name of the environment variable where from to get the value
+        db_driver_plh: "|db_driver|"
+        server_plh: "|server|"
+        dbname_plh: "|db_name|"
+        user_name_plh: "|db_user_name|"
+        user_pwd_plh: "|db_user_pwd|"
+        
+# config settings defined per a rule scope
+rules:
+    fastqc_raw:
+        memory: 40000
+    validate_fastqI1_umi_sequence_lenght:
+        memory: 10000
+        umi_length: 8
+    bismark:
+        threads: 16  # Y's code using 24 and dividing it by 4 in the script before calling the tool
+        single_host: True
+        memory: 15000
+        walltime: "48:00"
+    bismark_sort:
+        threads: 12
+        single_host: True
+        memory: 2000
+        # walltime: "24:00"
+    bismark_umi_format:
+        threads: 8
+        single_host: True
+        memory: 4000
+    bismark_dedup:
+        memory: 2000
+        walltime: "4:00"
+    bismark_methylation_extractor:
+        # threads: 4
+        single_host: True
+        memory: 1000
+        walltime: "2:00"
+    bismark_report:
+        # threads: 4
+        # single_host: True
+        memory: 2000
+        walltime: "2:00"
+    UMI_attach_R1:
+        memory: 20000
+        single_host: True
+    UMI_attach_R2:
+        memory: 20000
+        single_host: True
+    trim:
+        index_adapter: "AGATCGGAAGAGC"
+        univ_adapter: "AGATCGGAAGAGC"
+        minimum_length: 20
+    fastqc_trim:
+        memory: 40000
+    star_align:
+        memory: 19200
+        threads: 10
+        single_host: True
+        # ref_data_genom_dir: hg38_gencode_v30
+        # outSAMmultNmax help info:
+        # int: max number of multiple alignments for a read that will be output to the SAM/BAM files.
+        # -1: all alignments (up to --outFilterMultimapNmax) will be output
+        outSAMmultNmax: -1 # tool's default: -1
+        # outMultimapperOrder help info:
+        # Old_2.4: quasi-random order used before 2.5.0
+        # Random: random order of alignments for each multi-mapper. Read mates (pairs) are always adjacent, all alignment for each read stay together. This option will become default in the future releases.
+        outMultimapperOrder: "Old_2.4" # tool's default: "Old_2.4"
+        sjdbOverhang: 100
+        # outFilterScoreMinOverLread help info:
+        # default:0.66 real:same as outFilterScoreMin, but normalized to read length (sum of mates’ lengths for paired-end reads)
+        outFilterScoreMinOverLread: 0.66  #0.5
+        # outFilterMatchNminOverLread help info:
+        # default:0.66 real:same as outFilterMatchNmin, but normalized to the read length(sum of mates’lengths for paired-end reads).
+        outFilterMatchNminOverLread: 0.66  #0.5
+    star_align_stats:
+        memory: 4000
+        threads: 4
+        single_host: True
+        walltime: "24:00"
+        parallel_count: True  # if set to True, the parallel region counting of reads will be used; it is still goes through each line of the bam file
+        count_mapped_only: True # if set to True, the index file (.bai) will be used to get this count (very fast approach); if this set to True, "parallel_count" variable will be ignored, since index count is much faster
+    star_align_validate:
+        outlier_threshold: -2.0  # -2.5
+        min_reads_count: 50000
+        validate_z_score_max_read_count: 10000000  # z-score will be checked only if the read count is less then this number, otherwise the z-score is ignored (based on GN slack request on 3/17/25 3:54 PM
+    star_align_merge_all:
+        memory: 2000
+    star_align_intronMotif:
+        memory: 6000
+        threads: 10
+        single_host: True
+    star_align_djexpress:
+        memory: 6000
+        threads: 10
+        single_host: True
+    star_align_djexpress_named_junc:
+        memory: 200
+    star_align_named_bams:
+        memory: 200
+    intronMotifBAM2junc:
+        anchor_length: "8"
+        min_intron_len: "50"
+        max_intron_len: "500000"
+        s: "XS"
+    leafcutter_cluster_regtools:
+        split_reads_required: "50"
+        intron_length_allowed: "500000"
+    leafcutter_differential_splicing:
+        # memory: 6000
+        threads: 4
+    spladder_single_graphs:
+        memory: 12000
+        threads: 1
+        walltime: "24:00"
+        single_host: True
+    spladder_merged_graph_chuncks:
+        memory: 40000
+        retries: 3
+        threads: 1
+        min_walltime: 14  # hours
+        time_coef: 0.8  # coefficient reflecting number of walltime hours needed for the step based on the samples count
+    spladder_quantification1:
+        threads: 1
+        retries: 2
+        memory: 40000
+        walltime: "24:00"
+    spladder_quantification2:
+        threads: 1
+        memory: 12000
+    spladder_call_events:
+        threads: 2  # 12
+        memory: 40000  # 16000
+        retries: 2
+        walltime: "48:00"
+        single_host: True
+    spladder_call_events_long_execution:
+        threads: 1  # 12
+        memory: 32000  # 16000
+        retries: 2
+        min_walltime: 12  # hours
+        time_coef: 2 # 0.17  # coefficient reflecting number of walltime hours needed for the step per one sample
+    chr_info:
+        F_argument: "0x900"
+    rRNA:
+        memory: 6000  # use 6000 b/c host=1
+        threads: 6  # 12 # 6
+        single_host: True
+    phix:
+        memory: 6000  # use 6000 b/c host=1
+        threads: 6  # 12 # 6
+        single_host: True
+    globin:
+        memory: 6000  # use 6000 b/c host=1
+        threads: 6  # 12 # 6
+        single_host: True
+    telescope_sam:
+        memory: 6000  # use 6000 b/c host=1
+        threads: 6  # 12 # 6
+        single_host: True
+        walltime: "24:00"
+    telescope:
+        memory: 3000
+        threads: 1  
+        walltime: "6:00"
+        # single_host: True
+    kallisto:
+        memory: 20000
+        threads: 6
+        single_host: True
+        command: quant
+        index_dir: "kallisto/index"
+        genom_dir: "Ensembl_v96"  # this value overwrites value of alt_sl_ref_data_genom_dir
+        transcript_index: transcriptomeFlt.idx  # transcriptome.idx
+        bootstrap_samples: 20
+    suppa_kallisto: # serves suppa_kalisto and suppa compiled steps
+        memory: 10000
+        command: psiPerEvent  # help info: choose from 'generateEvents', 'psiPerEvent', 'psiPerIsoform', 'diffSplice', 'clusterEvents', 'joinFiles'
+        index_dir: "suppa"
+        genom_dir: "Ensembl_v96flt"  # this value overwrites value of alt_sl_ref_data_genom_dir
+        event_index_name_map: "_{event}_strict.ioe"
+        # even_index_postfix: _strict.ioe
+    suppa_rsem:
+        memory: 10000
+        single_host: True
+        command: psiPerEvent  # help info: choose from 'generateEvents', 'psiPerEvent', 'psiPerIsoform', 'diffSplice', 'clusterEvents', 'joinFiles'
+        index_dir: "suppa"
+        # currently code does not use this value, instead value of "motrpac_ref_data_genom_dir" variable is used
+        # genom_dir: "hg38_gencode_v30"  # this value overwrites value of alt_sl_ref_data_genom_dir
+        event_index_name_map: "_{event}_strict.ioe"
+        # even_index_postfix: _strict.ioe
+    star_align_most_common_read_length:
+        memory: 12000
+        single_host: True
+        max_sample_entries: 10000
+    rmats_b1:
+        memory: 2000
+    rmats_b2:
+        memory: 2000
+    rmats:
+        task: both  # prep
+        memory: 10500 # 30000
+        himem: True
+        single_host: True
+        retries: 2
+        threads: 16  # 6
+        samples_high_count: 500
+        walltime: "72:00"
+    rmats_compilation:
+        memory: 100000
+        himem: True
+        retries: 3
+    suppa_compilation:
+        memory: 35000
+        retries: 3
+    rmats_compilation_psi_table:
+        memory: 100000
+        himem: True
+        retries: 3
+        walltime: "48:00"
+    suppa_compilation_psi_table:
+        memory: 100000
+        himem: True
+        retries: 3
+        walltime: "48:00"
+    qc53:
+        memory: 20000
+        retries: 2
+        MINIMUM_LENGTH: 50
+        RRNA_FRAGMENT_PERCENTAGE: 0.3
+    mark_dup:
+        memory: 60000
+        memory_allocation: "-Xmx35000M"
+        CREATE_INDEX: false  # it was set to true in Motrpac version of this rule
+        VALIDATION_STRINGENCY: SILENT
+        ASSUME_SORT_ORDER: coordinate
+        REMOVE_DUPLICATES: false
+    multiqc_fastqc_raw:
+        memory: 30000
+        retries: 4
+    multiqc_fastqc_trim:
+        memory: 30000
+        retries: 4
+    rsem_validate:
+        memory: 32000  # 15000
+        retries: 4
+    rsem:
+        memory: 16000  # 8000
+        threads: 6
+        single_host: True
+        retries: 4
+        walltime: "72:00"
+    featureCounts:
+        memory: 6000
+        threads: 8  # 6
+        single_host: True
+    UMI_dup:
+        memory: 10000  # 6000
+        threads: 4
+        single_host: True
+    ngscheckmate_prep:
+        memory: 200
+        relative: False  # defines if an absolute or a relative symlink will be created
+    combine_psi_data_suppa:
+        memory: 16000
+

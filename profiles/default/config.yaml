@@ -1,0 +1,18 @@
+latency-wait: "15"
+use-conda: "True"
+software-deployment-method: "conda"
+printshellcmds: "True"
+restart-times: "0"
+jobs: "400"
+max-jobs-per-second: "10"
+max-status-checks-per-second: "10"
+
+executor: "cluster-generic"
+cluster-generic-submit-cmd: 'bsub -W {resources.walltime} -P {resources.lsf_project} -q {resources.lsf_queue} -n {threads} -R {resources.cl_resources} -J "{rule}.{resources.cl_job_suffix}" -oo "{log}_cluster.out" -eo "{log}_cluster.err"'
+
+default-resources:
+    - 'lsf_project=acc_sealfs01a'
+    - 'lsf_queue=premium'
+    - 'walltime="12:00"'
+    - 'cl_resources="rusage[mem=4000]"'
+    - 'cl_job_suffix=""'
