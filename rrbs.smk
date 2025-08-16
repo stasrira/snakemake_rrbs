@@ -612,6 +612,9 @@ rule all:
         
         fastqc_raw = expand(get_R1_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'), sample=samples_to_process),
         # fastqc_trim = expand(get_R1_file_path(data_path, sub_dir_path = 'fastqc_trim', file_name_format = '{sample}_|FN|_fastqc.html'), sample=samples_to_process),
+        
+        fastqc_trim_html = expand(str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"), sample=samples_to_process),
+        
         # chr_info = expand(str(Path(data_path) / "star_align/{sample}/chr_info.txt"), sample=samples_to_process),
         # rRNA = expand(str(Path(data_path) / "rRNA/{sample}.txt"), sample=samples_to_process),
         # phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
@@ -1035,88 +1038,84 @@ rule fastq_raw_validate:
         fi
         '''
 
-if samples_R1I1_present:
-    # these rules will be in use only if I1 files are present.
-    
-    rule validate_fastqI1_umi_sequence_lenght:
-        input: 
-            fastq_file = get_I1_file_path(data_path, 'fastq_raw'),
-        output:
-            # status_file = str(Path(data_path) / "fastq_raw_validate/status/{sample}_I1"),
-            valid_file = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
-        conda:
-            get_conda_env(),
-        log:
-            str(Path(data_path) / "logs/validate_fastqI1_umi_sequence_lenght/validate_fastqI1_umi_sequence_lenght_{sample}.log"),
-        resources:
-            # mem = next((el for el in [get_config_value ('rules/validate_fastqI1_umi_sequence_lenght/memory')] if el is not None), default_rule_memory)  # 10000
-            cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'validate_fastqI1_umi_sequence_lenght'),
-            cl_job_suffix = lambda wildcards : wildcards.sample,
-        params:
-            invalid_file = str(Path(data_path) / "fastq_raw_validate/invalid_{sample}_I1"), 
-            default_seq_len = get_config_value ('rules/validate_fastqI1_umi_sequence_lenght/umi_length'),
-            pipeline_warning_file_path = pipeline_warning_file_path,
-        script:
-            "scripts/validate_fastq_file.py"
-   
-    rule UMI_attach_R1:
+rule validate_fastqI1_umi_sequence_lenght:
+    input: 
+        fastq_file = get_I1_file_path(data_path, 'fastq_raw'),
+    output:
+        # status_file = str(Path(data_path) / "fastq_raw_validate/status/{sample}_I1"),
+        valid_file = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/validate_fastqI1_umi_sequence_lenght/validate_fastqI1_umi_sequence_lenght_{sample}.log"),
+    resources:
+        # mem = next((el for el in [get_config_value ('rules/validate_fastqI1_umi_sequence_lenght/memory')] if el is not None), default_rule_memory)  # 10000
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'validate_fastqI1_umi_sequence_lenght'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        invalid_file = str(Path(data_path) / "fastq_raw_validate/invalid_{sample}_I1"), 
+        default_seq_len = get_config_value ('rules/validate_fastqI1_umi_sequence_lenght/umi_length'),
+        pipeline_warning_file_path = pipeline_warning_file_path,
+    script:
+        "scripts/validate_fastq_file.py"
+
+rule UMI_attach_R1:
+    input:
+        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        valid_file_R12 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+        valid_file_I1 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
+    output:
+        attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq.gz")),
+        tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq")),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/UMI_attach_R1/UMI_attach_R1_{sample}.log"),
+    resources:
+        # mem = next((el for el in [get_config_value ('rules/UMI_attach_R1/memory')] if el is not None), default_rule_memory)  # 20000
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R1'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        fileI1 = get_I1_file_path(data_path, 'fastq_raw'),
+        umi_script = str(Path(snakemake_path) / "scripts/UMI_attach.awk"),
+        # original shell script:
+        # zcat {input} | {params.umi_script} -v Ifq={params.fileI1}|gzip -c>{output.attach_fastq} # copy from Y's code; not suited for this implementation
+        # zcat {input.fileR1}|{params.umi_script} -v Ifq={params.fileI1}|gzip -c>{output.attach_fastq}
+        # modified script
+        # zcat {input.fileR1} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
+        # gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log} 
+    shell:
+        '''
+        zcat {input.fileR1} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
+        gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
+        '''
+
+if samples_R1R2_present:
+    rule UMI_attach_R2:
         input:
-            fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
-            valid_file_R12 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+            fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
+            valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
             valid_file_I1 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
         output:
-            attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq.gz")),
-            tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq")),
+            attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz")),
+            tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq")),
         conda:
             get_conda_env(),
         log:
-            str(Path(data_path) / "logs/UMI_attach_R1/UMI_attach_R1_{sample}.log"),
+            str(Path(data_path) / "logs/UMI_attach_R2/UMI_attach_R2_{sample}.log"),
         resources:
-            # mem = next((el for el in [get_config_value ('rules/UMI_attach_R1/memory')] if el is not None), default_rule_memory)  # 20000
-            cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R1'),
+            # mem = next((el for el in [get_config_value ('rules/UMI_attach_R2/memory')] if el is not None), default_rule_memory)  # 20000
+            cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R2'),
             cl_job_suffix = lambda wildcards : wildcards.sample,
         params:
             fileI1 = get_I1_file_path(data_path, 'fastq_raw'),
             umi_script = str(Path(snakemake_path) / "scripts/UMI_attach.awk"),
-            # original shell script:
-            # zcat {input} | {params.umi_script} -v Ifq={params.fileI1}|gzip -c>{output.attach_fastq} # copy from Y's code; not suited for this implementation
-            # zcat {input.fileR1}|{params.umi_script} -v Ifq={params.fileI1}|gzip -c>{output.attach_fastq}
-            # modified script
-            # zcat {input.fileR1} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
-            # gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log} 
         shell:
             '''
-            zcat {input.fileR1} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
+            zcat {input.fileR2} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
             gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
             '''
-    
-    if samples_R1R2_present:
-        rule UMI_attach_R2:
-            input:
-                fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
-                valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
-                valid_file_I1 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
-            output:
-                attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz")),
-                tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq")),
-            conda:
-                get_conda_env(),
-            log:
-                str(Path(data_path) / "logs/UMI_attach_R2/UMI_attach_R2_{sample}.log"),
-            resources:
-                # mem = next((el for el in [get_config_value ('rules/UMI_attach_R2/memory')] if el is not None), default_rule_memory)  # 20000
-                cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R2'),
-                cl_job_suffix = lambda wildcards : wildcards.sample,
-            params:
-                fileI1 = get_I1_file_path(data_path, 'fastq_raw'),
-                umi_script = str(Path(snakemake_path) / "scripts/UMI_attach.awk"),
-            shell:
-                '''
-                zcat {input.fileR2} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
-                gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
-                '''
-            
-
+        
 rule trim:
     input:
         fileR1 = get_R1_file_path(data_path, ('fastq_attach' if samples_R1I1_present else 'fastq_raw')),
@@ -1124,7 +1123,8 @@ rule trim:
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
     output:
         # ok_file = str(Path(data_path) / "fastq_trim/{sample}_ok.txt"),
-        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
+        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
+        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), 
         report_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
         trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
         report_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1R2_present else [],
@@ -1140,24 +1140,33 @@ rule trim:
         pair_options = \
             "--paired -a2 {}".format( \
             get_config_value ('rules/trim/index2_adapter') if samples_R1I1_present else get_config_value ('rules/trim/index_adapter')) \
-            if samples_R1R2_present else ""
+            if samples_R1R2_present else "",
+        # rename non-paired output of ".gz" to the format of the paired output 
+        rename_trim = 'mv {} {}'.format( \
+            str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"), \
+            str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz")) \
+            if not samples_R1R2_present else "",
     shell:
         '''
         trim_dir="$(dirname "{output.trim_R1}")"  # get trim dir from the path of the output file
         
         trim_galore -a {params.index_adapter} {params.pair_options} -o $trim_dir {input.fileR1} {input.fileR2} 2>&1 | tee {log}
+        {params.rename_trim}
         '''
         # echo 'OK' > {output.ok_file}
 
 rule fastqc_trim:
     input:
-        fileR1 = get_R1_file_path(data_path, 'fastq_trim'),
-        fileR2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else []
+        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
+        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
     output:
-        # outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_fastqc.html"),
-        outR1 = get_R1_file_path(data_path, sub_dir_path = 'fastqc_trim', file_name_format = '{sample}_|FN|_fastqc.html'),
-        # outR2 = str(Path(data_path) / "fastqc_trim/{sample}_R2_fastqc.html") if samples_R1R2_present else [],
-        outR2 = get_R2_file_path(data_path, sub_dir_path = 'fastqc_trim', file_name_format = '{sample}_|FN|_fastqc.html') if samples_R1R2_present else [],
+        # outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.zip") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed_fastqc.zip"),
+        # outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed_fastqc.html"),
+        outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.zip"),
+        outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"),
+        outR2 = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.zip") if samples_R1R2_present else [],
+        outR2_html = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.html") if samples_R1R2_present else [],
     conda:
         get_conda_env(),
     log:
@@ -1171,7 +1180,7 @@ rule fastqc_trim:
         out_dir = str(Path(data_path) / "fastqc_trim")
     shell:
         '''
-        {params.tool} --outdir {params.out_dir} {input.fileR1} {input.fileR2} 2>&1 | tee {log}
+        {params.tool} --outdir {params.out_dir} {input.trim_R1} {input.trim_R2} 2>&1 | tee {log}
         '''
 
 rule star_align:
