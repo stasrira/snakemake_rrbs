@@ -566,8 +566,9 @@ rule all:
         fastq_I1_validate = expand(str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"), sample=samples_to_process) if samples_R1I1_present else [],
         # umi_attach_R1 = expand(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq.gz"), sample=samples_to_process) if samples_R1I1_present else [],
         # umi_attach_R2 = expand(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz"), sample=samples_to_process) if samples_R1R2_present and samples_R1I1_present else [],
-        # the following is commented to avoid reprocessing pipeline just because the trim files were deleted at the end of the process
-        # trim = expand(get_R1_file_path(data_path, 'fastq_trim'), sample=samples_to_process),
+        # trim_ok_file = expand(str(Path(data_path) / "fastq_trim/{sample}_ok.txt"), sample=samples_to_process),
+        trim_R1 = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process),
+        
         # star_align_bam = expand(str(Path(data_path) / "star_align/{sample}/Aligned.sortedByCoord.out.bam"), sample=samples_to_process),
         # star_align_validate = expand(str(Path(data_path) / "star_align_validate/valid_{sample}"), sample=samples_to_process),
         # star_align_qc_log = expand(str(Path(data_path) / "star_align/{sample}/Log.final.out"), sample=samples_to_process),
@@ -595,6 +596,8 @@ rule all:
         # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
         bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}/{sample}_report.html"), sample=samples_to_process),
         bismark_chr_info = expand(str(Path(data_path) / "bismark/chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
+        # bismark_lambda_ok_file = expand(str(Path(data_path) / "bismark_lambda/{sample}/{sample}_ok.txt"), sample=samples_to_process),
+        bismark_lambda_bam = expand(str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
         
         # spladder_single_graphs_count_file = expand(str(Path(data_path) / "spladder/spladder/genes_graph_conf3.{sample}_Aligned.sortedByCoord.out.count.hdf5"), sample=samples_to_process) if run_spladder else [],
         # spladder_alignments = str(Path(data_path) / "spladder/alignments.txt") if run_spladder else [],
@@ -705,8 +708,8 @@ rule bismark:
         # """        
         # Temporarily commemnted to avoid re-runing "bismark" step
         tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark/tmp_{sample}"))),
-        bam = temp_debugcheck(str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam")),
-        align_report= str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"),
+        bam = temp_debugcheck(str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2.bam")),
+        align_report= str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_SE_report.txt"),
         # """
     conda:
         get_conda_env('bismark'),
@@ -936,60 +939,101 @@ rule bismark_chr_info:
         # samtools view $bam|cut -f 3|sort |uniq -c > chr_info/${SID}.txt
         # echo 'OK' > {output.ok_file}
 
-if samples_R1R2_present:
-    rule fastq_raw_validate:
-        # this rule asserts that number of rows in R1 and R2 files is the same
-        input:
-            fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
-            fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
-            # to make sure fastqc_raw rule is completed before starting this one, the following 2 rows are included here
-            fastqc_raw_outR1 = get_R1_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'),
-            fastqc_raw_outR2 = get_R2_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'),
-        output:
-            valid_file = str(Path(data_path) / "fastq_raw_validate/valid_{sample}"),
-        conda:
-            get_conda_env(),
-        log:
-            str(Path(data_path) / "logs/fastq_raw_validate/fastq_raw_validate_{sample}.log")
-        resources:
-            cl_job_suffix = lambda wildcards : wildcards.sample,
-        params:
-            outdir = str(Path(data_path) / "fastq_raw_validate"),
-            pipeline_warning_file_path = pipeline_warning_file_path,
-        shell:
-            '''
-            file1="{input.fileR1}"
-            file2="{input.fileR2}"
-            echo "R1 file: $file1" 2>&1 | tee {log} # do not append here, since this is a first entry to the log file
-            echo "R2 file: $file2" 2>&1 | tee -a {log}
-            
-            r1=$(zcat $file1 | wc -l) # 2>&1 | tee -a {log}
-            r2=$(zcat $file2 | wc -l) # 2>&1 | tee -a {log}
-            echo "R1 count => $r1" 2>&1 | tee -a {log}
-            echo "R2 count => $r2" 2>&1 | tee -a {log}
-            
-            content="R1=$r1 | R2=$r2"
-            
-            # Check if r1 and r2 are equal
-            if [ "$r1" = "$r2" ] && [ -n "$r1" ] && [ -n "$r2" ]; then
-                output_file="valid_{wildcards.sample}"
-                warning_msg=""
-            else
-                output_file="invalid_{wildcards.sample}"
-                warning_msg="Warning: fastq_raw_validate step. Sample {wildcards.sample} is invalid - $content"
-            fi
-            
-            out_path={params.outdir}/$output_file
-            echo "output file name: $out_path" 2>&1 | tee -a {log}
+rule bismark_lambda:
+    input:
+        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
+        valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+    output:
+        # ok_file = str(Path(data_path) / "bismark_lambda/{sample}/{sample}_ok.txt"),
+        # """        
+        # Temporarily commemnted to avoid re-runing "bismark" step
+        tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark_lambda/tmp_{sample}"))),
+        bam = str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2.bam"),
+        align_report= str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_SE_report.txt"),
+        # """
+    conda:
+        get_conda_env('bismark'),
+    log:
+        str(Path(data_path) / "logs/bismark_lambda/bismark_lambda_{sample}.log")
+    threads: get_rule_threads ('bismark_lambda')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_lambda'),  # required for loading memory 
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+        walltime = get_rule_walltime('bismark_lambda'),
+    params:
+        genomeDir = str(Path(motrpac_ref_data_path) / 'misc_data/lambda'),
+        # tmp_dir = str(Path(data_path) / "bismark/tmp_{sample}"),
+        file1_arg_name = "-1" if samples_R1R2_present else "",
+        file2_arg_name = "-2" if samples_R1R2_present else "",
+    shell:
+        '''
+        cd "$(dirname "{output.bam}")"  # get to the parent dir of the output file
+        
+        bismark \
+        {params.genomeDir} \
+        --non_directional \
+        --multicore {threads} \
+        --temp_dir {output.tmp_dir} \
+        {params.file1_arg_name} {input.fileR1} {params.file2_arg_name} {input.fileR2} \
+        2>&1 | tee {log}
+        
+        '''
+        # echo 'OK' > {output.ok_file}
 
-            # Create the output file with the appropriate name and content
-            echo "$content" > "$out_path" # 2>&1 | tee -a {log}
-            
-            if [ -n "$warning_msg" ]; then
-                # If it's not blank, add warning message to the pipeline warning file
-                echo $warning_msg >> {params.pipeline_warning_file_path}
-            fi
-            '''
+rule fastq_raw_validate:
+    # this rule asserts that number of rows in R1 and R2 files is the same
+    input:
+        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
+        # to make sure fastqc_raw rule is completed before starting this one, the following 2 rows are included here
+        fastqc_raw_outR1 = get_R1_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'),
+        fastqc_raw_outR2 = get_R2_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'),
+    output:
+        valid_file = str(Path(data_path) / "fastq_raw_validate/valid_{sample}"),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/fastq_raw_validate/fastq_raw_validate_{sample}.log")
+    resources:
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        outdir = str(Path(data_path) / "fastq_raw_validate"),
+        pipeline_warning_file_path = pipeline_warning_file_path,
+    shell:
+        '''
+        file1="{input.fileR1}"
+        file2="{input.fileR2}"
+        echo "R1 file: $file1" 2>&1 | tee {log} # do not append here, since this is a first entry to the log file
+        echo "R2 file: $file2" 2>&1 | tee -a {log}
+        
+        r1=$(zcat $file1 | wc -l) # 2>&1 | tee -a {log}
+        r2=$(zcat $file2 | wc -l) # 2>&1 | tee -a {log}
+        echo "R1 count => $r1" 2>&1 | tee -a {log}
+        echo "R2 count => $r2" 2>&1 | tee -a {log}
+        
+        content="R1=$r1 | R2=$r2"
+        
+        # Check if r1 and r2 are equal
+        if [ "$r1" = "$r2" ] && [ -n "$r1" ] && [ -n "$r2" ]; then
+            output_file="valid_{wildcards.sample}"
+            warning_msg=""
+        else
+            output_file="invalid_{wildcards.sample}"
+            warning_msg="Warning: fastq_raw_validate step. Sample {wildcards.sample} is invalid - $content"
+        fi
+        
+        out_path={params.outdir}/$output_file
+        echo "output file name: $out_path" 2>&1 | tee -a {log}
+
+        # Create the output file with the appropriate name and content
+        echo "$content" > "$out_path" # 2>&1 | tee -a {log}
+        
+        if [ -n "$warning_msg" ]; then
+            # If it's not blank, add warning message to the pipeline warning file
+            echo $warning_msg >> {params.pipeline_warning_file_path}
+        fi
+        '''
 
 if samples_R1I1_present:
     # these rules will be in use only if I1 files are present.
@@ -1079,47 +1123,31 @@ rule trim:
         fileR2 = get_R2_file_path(data_path, ('fastq_attach' if samples_R1I1_present else 'fastq_raw')) if samples_R1R2_present else [],
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
     output:
-        trimR1 = temp_debugcheck(get_R1_file_path(data_path, 'fastq_trim')),
-        trimR2 = temp_debugcheck(get_R2_file_path(data_path, 'fastq_trim')) if samples_R1R2_present else [],
-        trimR1_tooshort = temp_debugcheck(get_R1_file_path(data_path, 'fastq_trim/tooshort')),
-        trimR2_tooshort = temp_debugcheck(get_R2_file_path(data_path, 'fastq_trim/tooshort')) if samples_R1R2_present else [],
-        trim_log_file = temp_debugcheck(str(Path(data_path) / "logs/trim/tool_logs/log.{sample}")), # required for multiqc_fastqc_trim rule
+        # ok_file = str(Path(data_path) / "fastq_trim/{sample}_ok.txt"),
+        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
+        report_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
+        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+        report_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1R2_present else [],
     conda:
-        get_conda_env('cutadapt'),
+        get_conda_env('trim_galore'),
     log:
-        str(Path(data_path) / "logs/trim/log.{sample}")
+        str(Path(data_path) / "logs/trim/{sample}.log")
     resources:
         cl_job_suffix = lambda wildcards : wildcards.sample,
     params:
-        tool = "cutadapt",
-        data_path = data_path,
-        tooshort_path = str(Path(data_path) / "fastq_trim/tooshort"),
         index_adapter = get_config_value ('rules/trim/index_adapter'),
         # the following creates a partial bash script that will be inserted to the shell part
-        univ_adapter = "-A " + get_config_value ('rules/trim/univ_adapter') if samples_R1R2_present else "",
-        output = str(Path(data_path) / ("fastq_trim/" + os.path.basename(get_R1_file_path(data_path, 'fastq_raw')))),
-        # the following creates a partial bash script that will be inserted to the shell part
-        paired_output = "--paired-output " + str(Path(data_path) / ("fastq_trim/" + os.path.basename(get_R2_file_path(data_path, 'fastq_raw')))) if samples_R1R2_present else "",
-        minimum_length = get_config_value ('rules/trim/minimum_length'),
-        too_short_output = str(Path(data_path) / ("fastq_trim/tooshort/" + os.path.basename(get_R1_file_path(data_path, 'fastq_raw')))),
-        # the following creates a partial bash script that will be inserted to the shell part
-        too_short_paired_output = "--too-short-paired-output " + str(Path(data_path) / ("fastq_trim/tooshort/" + os.path.basename(get_R2_file_path(data_path, 'fastq_raw')))) if samples_R1R2_present else "",
+        pair_options = \
+            "--paired -a2 {}".format( \
+            get_config_value ('rules/trim/index2_adapter') if samples_R1I1_present else get_config_value ('rules/trim/index_adapter')) \
+            if samples_R1R2_present else ""
     shell:
         '''
-        # cd {params.data_path} # navigate to the data folder location
-        mkdir -p {params.tooshort_path} # pre-create needed dir
-        {params.tool} \
-            --adapter {params.index_adapter} \
-            {params.univ_adapter} \
-            --output {params.output} \
-            {params.paired_output} \
-            --minimum-length {params.minimum_length} \
-            --too-short-output {params.too_short_output} \
-            {params.too_short_paired_output} \
-            {input.fileR1} {input.fileR2} 2>&1 | tee {log}
-        # copy created log file to the dedicated directory
-        cp {log[0]} {output.trim_log_file}
+        trim_dir="$(dirname "{output.trim_R1}")"  # get trim dir from the path of the output file
+        
+        trim_galore -a {params.index_adapter} {params.pair_options} -o $trim_dir {input.fileR1} {input.fileR2} 2>&1 | tee {log}
         '''
+        # echo 'OK' > {output.ok_file}
 
 rule fastqc_trim:
     input:

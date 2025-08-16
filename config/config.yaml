@@ -80,6 +80,7 @@ email:
 conda_envs:
     main_tools: 'conda_envs/main_tools_py3.yml'
     bismark: 'conda_envs/bismark.yml'
+    trim_galore: 'conda_envs/trim_galore.yml'
     # rmats: 'conda_envs/rmats.yml'
     # rmats_turbo: 'conda_envs/rmats_turbo.yml'
     # leafcutter: 'conda_envs/leafcutter_py2.yml'
@@ -124,6 +125,11 @@ rules:
         single_host: True
         memory: 15000
         walltime: "48:00"
+    bismark_lambda:
+        threads: 16  # Y's code using 24 and dividing it by 4 in the script before calling the tool
+        single_host: True
+        memory: 15000
+        walltime: "48:00"
     bismark_sort:
         threads: 4
         single_host: True
@@ -160,8 +166,8 @@ rules:
         single_host: True
     trim:
         index_adapter: "AGATCGGAAGAGC"
-        univ_adapter: "AGATCGGAAGAGC"
-        minimum_length: 20
+        index2_adapter: "AAATCAAAAAAAC"
+        # minimum_length: 20
     fastqc_trim:
         memory: 40000
     star_align:
