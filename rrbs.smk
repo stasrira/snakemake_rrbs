@@ -571,11 +571,11 @@ rule all:
         
         # trim_ok_file = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_ok.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_ok.txt"), sample=samples_to_process),
         
-        trim_R1 = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process), 
+#        trim_R1 = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process), 
         
-#        trim_R1 = expand((str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz")), sample=samples_to_process),
+##        trim_R1 = expand((str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz")), sample=samples_to_process),
         # trim_umi_ok_file = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_trim_umi_ok.txt"), sample=samples_to_process) if samples_R1I1_present else [],
-        trim_R1_final = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process) if samples_R1I1_present else [],
+#        trim_R1_final = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process) if samples_R1I1_present else [],
         
         # trim_R1_final = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process),
         
@@ -593,7 +593,7 @@ rule all:
         # ds_cluster_significance = str(Path(data_path) / ("leafcutter/ds/leafcutter_ds_cluster_significance.txt")) if run_leafcutter else [],
 
         # bismark_ok_file = expand(str(Path(data_path) / "bismark/{sample}_ok.txt"), sample=samples_to_process),
-        # bismark_bam_out = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam"), sample=samples_to_process) if samples_R1R2_present else expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
+        bismark_bam_out = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam"), sample=samples_to_process) if samples_R1R2_present else expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
         # bismark_sort_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_sort_ok.txt"), sample=samples_to_process),
         # bismark_pre_dup_bam_umi = expand(str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
         # bismark_dedup_txt = expand(str(Path(data_path) / "bismark/{sample}_dedup.txt"), sample=samples_to_process),
@@ -633,7 +633,8 @@ rule all:
         fastqc_raw = expand(get_R1_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html'), sample=samples_to_process),
         # fastqc_trim = expand(get_R1_file_path(data_path, sub_dir_path = 'fastqc_trim', file_name_format = '{sample}_|FN|_fastqc.html'), sample=samples_to_process),
         
-        fastqc_trim_html = expand(str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"), sample=samples_to_process),
+        # fastqc_trim_html = expand(str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"), sample=samples_to_process),
+        fastqc_trim_html = expand(str(Path(data_path) / "fastqc_trim/{sample}_R1_fastqc.html"), sample=samples_to_process),
         
         # chr_info = expand(str(Path(data_path) / "star_align/{sample}/chr_info.txt"), sample=samples_to_process),
         # rRNA = expand(str(Path(data_path) / "rRNA/{sample}.txt"), sample=samples_to_process),
@@ -725,9 +726,13 @@ rule fastqc_raw:
         
 rule bismark:
     input:
-        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
-        fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
-        valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+        # fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        # fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
+        # valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+        fileR1 = get_R1_file_path(data_path, 'fastq_trim'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else [],
+        # fileR1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+        # fileR2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
     output:
         # ok_file = str(Path(data_path) / "bismark/{sample}_ok.txt")
         # """        
@@ -767,9 +772,13 @@ rule bismark:
 
 rule bismark_lambda:
     input:
-        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
-        fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
+        # fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        # fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+        fileR1 = get_R1_file_path(data_path, 'fastq_trim'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else [],
+        # fileR1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+        # fileR2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
     output:
         # ok_file = str(Path(data_path) / "bismark_lambda/{sample}_ok.txt"),
         # """        
@@ -1341,15 +1350,41 @@ rule trim_umi:
         # mv {params.trim_umi_R1} {output.trim_umi_R1}
         # {params.mv_pairopt} {params.trim_umi_R2} {output.trim_umi_R2}
 
-rule fastqc_trim:
+rule trim_name_normilized:
     input:
         trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
         trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+    output: 
+        fileR1 = get_R1_file_path(data_path, 'fastq_trim'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else [],
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/trim_name_normilized/trim_name_normilized_{sample}.log")
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'trim_name_normilized'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        rename_R2 = 'mv' if samples_R1R2_present else '',
+    shell:
+        '''
+        # always rename R1 file
+        mv {input.trim_R1} {output.fileR1}
+        # rename R2 only if variable samples_R1R2_present is True
+        {params.rename_R2} {input.trim_R2} {output.fileR2}
+        '''
+
+rule fastqc_trim:
+    input:
+        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1.fq.gz"),
+        # trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2.fq.gz") if samples_R1R2_present else [],
+        trim_R1 = get_R1_file_path(data_path, 'fastq_trim'),
+        trim_R2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else [],
     output:
-        outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.zip"),
-        outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"),
-        outR2 = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.zip") if samples_R1R2_present else [],
-        outR2_html = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.html") if samples_R1R2_present else [],
+        outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_fastqc.zip"),
+        outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_fastqc.html"),
+        outR2 = str(Path(data_path) / "fastqc_trim/{sample}_R2_fastqc.zip") if samples_R1R2_present else [],
+        outR2_html = str(Path(data_path) / "fastqc_trim/{sample}_R2_fastqc.html") if samples_R1R2_present else [],
     conda:
         get_conda_env('trim_galore'),
     log:
@@ -1368,8 +1403,10 @@ rule fastqc_trim:
 
 rule phix:
     input:
-        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
-        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1.fq.gz"),
+        # trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2.fq.gz") if samples_R1R2_present else [],
+        trim_R1 = get_R1_file_path(data_path, 'fastq_trim'),
+        trim_R2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else [],
     output:
         phix = str(Path(data_path) / "phix/{sample}.txt"),
         sam_file = temp_debugcheck(str(Path(data_path) / "phix/{sample}.sam"))
@@ -1387,10 +1424,10 @@ rule phix:
         ref_path = str(Path(motrpac_ref_data_path) / "misc_data"),
 #        sam_file = str(Path(data_path) / "phix/{sample}.sam"),
         # the following creates a partial bash script that will be inserted to the shell part
-        input_files_bash_script = "-1 " + str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") + \
-                           " -2 " + str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") \
+        input_files_bash_script = "-1 " + str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz") + \
+                           " -2 " + str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz") \
                            if samples_R1R2_present else \
-                           "-U " + str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+                           "-U " + str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz"),
     shell:
         '''
         {params.tool} \
