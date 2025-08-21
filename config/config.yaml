@@ -80,7 +80,7 @@ email:
 conda_envs:
     main_tools: 'conda_envs/main_tools_py3.yml'
     bismark: 'conda_envs/bismark.yml'
-    trim_galore: 'conda_envs/trim_galore.yml'
+    trim_galore: 'conda_envs/trim_galore.yml'  # includes fastqc
     # rmats: 'conda_envs/rmats.yml'
     # rmats_turbo: 'conda_envs/rmats_turbo.yml'
     # leafcutter: 'conda_envs/leafcutter_py2.yml'
@@ -148,16 +148,25 @@ rules:
         memory: 1000
         walltime: "2:00"
     bismark_report:
-        # threads: 4
-        # single_host: True
         memory: 1000
+        walltime: "2:00"
+    bismark_summary:
+        memory: 2000
+        walltime: "2:00"
+    bismark_lambda_summary:
+        memory: 2000
+        walltime: "2:00"
+    bismark_4strand_report:
+        memory: 2000
+        walltime: "2:00"
+    bismark_lambda_4strand_report:
+        memory: 2000
         walltime: "2:00"
     bismark_chr_info:
         threads: 4
         single_host: True
         memory: 1200
         walltime: "2:00"
-    
     UMI_attach_R1:
         memory: 20000
         single_host: True
@@ -170,103 +179,16 @@ rules:
         # minimum_length: 20
     fastqc_trim:
         memory: 40000
-    star_align:
-        memory: 19200
-        threads: 10
-        single_host: True
-        # ref_data_genom_dir: hg38_gencode_v30
-        # outSAMmultNmax help info:
-        # int: max number of multiple alignments for a read that will be output to the SAM/BAM files.
-        # -1: all alignments (up to --outFilterMultimapNmax) will be output
-        outSAMmultNmax: -1 # tool's default: -1
-        # outMultimapperOrder help info:
-        # Old_2.4: quasi-random order used before 2.5.0
-        # Random: random order of alignments for each multi-mapper. Read mates (pairs) are always adjacent, all alignment for each read stay together. This option will become default in the future releases.
-        outMultimapperOrder: "Old_2.4" # tool's default: "Old_2.4"
-        sjdbOverhang: 100
-        # outFilterScoreMinOverLread help info:
-        # default:0.66 real:same as outFilterScoreMin, but normalized to read length (sum of mates’ lengths for paired-end reads)
-        outFilterScoreMinOverLread: 0.66  #0.5
-        # outFilterMatchNminOverLread help info:
-        # default:0.66 real:same as outFilterMatchNmin, but normalized to the read length(sum of mates’lengths for paired-end reads).
-        outFilterMatchNminOverLread: 0.66  #0.5
-    star_align_stats:
-        memory: 4000
-        threads: 4
-        single_host: True
-        walltime: "24:00"
-        parallel_count: True  # if set to True, the parallel region counting of reads will be used; it is still goes through each line of the bam file
-        count_mapped_only: True # if set to True, the index file (.bai) will be used to get this count (very fast approach); if this set to True, "parallel_count" variable will be ignored, since index count is much faster
-    star_align_validate:
-        outlier_threshold: -2.0  # -2.5
-        min_reads_count: 50000
-        validate_z_score_max_read_count: 10000000  # z-score will be checked only if the read count is less then this number, otherwise the z-score is ignored (based on GN slack request on 3/17/25 3:54 PM
-    star_align_merge_all:
-        memory: 2000
-    star_align_intronMotif:
-        memory: 6000
-        threads: 10
-        single_host: True
-    star_align_djexpress:
-        memory: 6000
-        threads: 10
-        single_host: True
-    star_align_djexpress_named_junc:
-        memory: 200
-    star_align_named_bams:
-        memory: 200
-    intronMotifBAM2junc:
-        anchor_length: "8"
-        min_intron_len: "50"
-        max_intron_len: "500000"
-        s: "XS"
-    leafcutter_cluster_regtools:
-        split_reads_required: "50"
-        intron_length_allowed: "500000"
-    leafcutter_differential_splicing:
-        # memory: 6000
-        threads: 4
-    spladder_single_graphs:
-        memory: 12000
-        threads: 1
-        walltime: "24:00"
-        single_host: True
-    spladder_merged_graph_chuncks:
-        memory: 40000
-        retries: 3
-        threads: 1
-        min_walltime: 14  # hours
-        time_coef: 0.8  # coefficient reflecting number of walltime hours needed for the step based on the samples count
-    spladder_quantification1:
-        threads: 1
-        retries: 2
-        memory: 40000
-        walltime: "24:00"
-    spladder_quantification2:
-        threads: 1
-        memory: 12000
-    spladder_call_events:
-        threads: 2  # 12
-        memory: 40000  # 16000
-        retries: 2
-        walltime: "48:00"
-        single_host: True
-    spladder_call_events_long_execution:
-        threads: 1  # 12
-        memory: 32000  # 16000
-        retries: 2
-        min_walltime: 12  # hours
-        time_coef: 2 # 0.17  # coefficient reflecting number of walltime hours needed for the step per one sample
-    chr_info:
-        F_argument: "0x900"
-    rRNA:
-        memory: 6000  # use 6000 b/c host=1
-        threads: 6  # 12 # 6
-        single_host: True
     phix:
         memory: 6000  # use 6000 b/c host=1
         threads: 6  # 12 # 6
         single_host: True
+    trim_umi:
+        memory: 8000  # 6000
+        threads: 4
+        single_host: True
+    
+    
     globin:
         memory: 6000  # use 6000 b/c host=1
         threads: 6  # 12 # 6

@@ -560,14 +560,25 @@ onerror:
     print_global_info()
     print_global_warnings()
 
+ruleorder: trim>trim_umi
+
 rule all:
     input:
         fastq_R1R2_validate = expand(str(Path(data_path) / "fastq_raw_validate/valid_{sample}"), sample=samples_to_process) if samples_R1R2_present else [],
         fastq_I1_validate = expand(str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"), sample=samples_to_process) if samples_R1I1_present else [],
         # umi_attach_R1 = expand(str(Path(data_path) / "fastq_attach/{sample}_R1.fastq.gz"), sample=samples_to_process) if samples_R1I1_present else [],
         # umi_attach_R2 = expand(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz"), sample=samples_to_process) if samples_R1R2_present and samples_R1I1_present else [],
-        # trim_ok_file = expand(str(Path(data_path) / "fastq_trim/{sample}_ok.txt"), sample=samples_to_process),
-        trim_R1 = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process),
+        
+        # trim_ok_file = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_ok.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_ok.txt"), sample=samples_to_process),
+        
+        trim_R1 = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process), 
+        
+#        trim_R1 = expand((str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz")), sample=samples_to_process),
+        # trim_umi_ok_file = expand(str(Path(data_path) / "fastq_trim/temp/{sample}_trim_umi_ok.txt"), sample=samples_to_process) if samples_R1I1_present else [],
+        trim_R1_final = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process) if samples_R1I1_present else [],
+        
+        # trim_R1_final = expand(str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), sample=samples_to_process),
+        
         
         # star_align_bam = expand(str(Path(data_path) / "star_align/{sample}/Aligned.sortedByCoord.out.bam"), sample=samples_to_process),
         # star_align_validate = expand(str(Path(data_path) / "star_align_validate/valid_{sample}"), sample=samples_to_process),
@@ -585,19 +596,28 @@ rule all:
         # bismark_bam_out = expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam"), sample=samples_to_process) if samples_R1R2_present else expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
         # bismark_sort_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_sort_ok.txt"), sample=samples_to_process),
         # bismark_pre_dup_bam_umi = expand(str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/umi/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
-        # bismark_dedup_txt = expand(str(Path(data_path) / "bismark/{sample}/{sample}_dedup.txt"), sample=samples_to_process),
-        # bismark_methylation_extractor_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"), sample=samples_to_process),
+        # bismark_dedup_txt = expand(str(Path(data_path) / "bismark/{sample}_dedup.txt"), sample=samples_to_process),
+        # bismark_methylation_extractor_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_methylation_extractor_ok.txt"), sample=samples_to_process),
         bismark_methylation_extractor_CHG_context = \
             expand( \
-            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"), \
+            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"), \
             sample=samples_to_process),
-        # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
-        bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}/{sample}_report.html"), sample=samples_to_process),
-        bismark_chr_info = expand(str(Path(data_path) / "bismark/chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
-        # bismark_lambda_ok_file = expand(str(Path(data_path) / "bismark_lambda/{sample}/{sample}_ok.txt"), sample=samples_to_process),
-        bismark_lambda_bam = expand(str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
+        # bismark_report_ok_file = expand(str(Path(data_path) / "bismark/{sample}_bismark_report_ok.txt"), sample=samples_to_process),
+        bismark_report_html = expand(str(Path(data_path) / "bismark/{sample}_report.html"), sample=samples_to_process),
+        bismark_chr_info = expand(str(Path(data_path) / "chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
+        # bismark_lambda_ok_file = expand(str(Path(data_path) / "bismark_lambda/{sample}_ok.txt"), sample=samples_to_process),
+        bismark_lambda_bam = expand(str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2.bam"), sample=samples_to_process),
+        
+        bismark_summary_html = str(Path(data_path) / "bismark/bismark_summary_report.html"),
+        bismark_summary_txt = str(Path(data_path) / "bismark/bismark_summary_report.txt"),
+        
+        bismark_lambda_summary_html = str(Path(data_path) / "bismark_lambda/bismark_summary_report.html"),
+        bismark_lambda_summary_txt = str(Path(data_path) / "bismark_lambda/bismark_summary_report.txt"),
+        
+        bismark_4strand_report_ = str(Path(data_path) / "bismark/bismark_4strand.tsv"),
+        bismark_lambda_4strand_report_ = str(Path(data_path) / "bismark_lambda/bismark_4strand.tsv"),
         
         # spladder_single_graphs_count_file = expand(str(Path(data_path) / "spladder/spladder/genes_graph_conf3.{sample}_Aligned.sortedByCoord.out.count.hdf5"), sample=samples_to_process) if run_spladder else [],
         # spladder_alignments = str(Path(data_path) / "spladder/alignments.txt") if run_spladder else [],
@@ -617,7 +637,9 @@ rule all:
         
         # chr_info = expand(str(Path(data_path) / "star_align/{sample}/chr_info.txt"), sample=samples_to_process),
         # rRNA = expand(str(Path(data_path) / "rRNA/{sample}.txt"), sample=samples_to_process),
-        # phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
+        
+        phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
+        
         # globin = expand(str(Path(data_path) / "globin/{sample}.txt"), sample=samples_to_process),
         
         # kallisto_abd_file1 = expand(str(Path(data_path) / "kallisto/{sample}/abundance.tsv"), sample=samples_to_process) if rmats_contrast_file_valid and run_alternative_splicing else [],
@@ -686,7 +708,7 @@ rule fastqc_raw:
         # outR2 = str(Path(data_path) / "fastqc_raw/{sample}_R2_fastqc.html") if samples_R1R2_present else [],
         outR2 = get_R2_file_path(data_path, sub_dir_path = 'fastqc_raw', file_name_format = '{sample}_|FN|_fastqc.html') if samples_R1R2_present else [],
     conda:
-        get_conda_env(),
+        get_conda_env('trim_galore'),
     log:
         str(Path(data_path) / "logs/fastqc_raw/fastqc_raw_{sample}.log")
     resources:
@@ -742,14 +764,58 @@ rule bismark:
         2>&1 | tee {log}
         '''
         # cd {params.out_dir}
+
+rule bismark_lambda:
+    input:
+        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
+        fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
+        valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+    output:
+        # ok_file = str(Path(data_path) / "bismark_lambda/{sample}_ok.txt"),
+        # """        
+        # Temporarily commemnted to avoid re-runing "bismark" step
+        tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark_lambda/tmp_{sample}"))),
+        bam = str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2.bam"),
+        align_report= str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_SE_report.txt"),
+        # """
+    conda:
+        get_conda_env('bismark'),
+    log:
+        str(Path(data_path) / "logs/bismark_lambda/bismark_lambda_{sample}.log")
+    threads: get_rule_threads ('bismark_lambda')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_lambda'),  # required for loading memory 
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+        walltime = get_rule_walltime('bismark_lambda'),
+    params:
+        genomeDir = str(Path(motrpac_ref_data_path) / 'misc_data/lambda'),
+        # tmp_dir = str(Path(data_path) / "bismark/tmp_{sample}"),
+        file1_arg_name = "-1" if samples_R1R2_present else "",
+        file2_arg_name = "-2" if samples_R1R2_present else "",
+    shell:
+        '''
+        cd "$(dirname "{output.bam}")"  # get to the parent dir of the output file
+        
+        bismark \
+        {params.genomeDir} \
+        --non_directional \
+        --multicore {threads} \
+        --temp_dir {output.tmp_dir} \
+        {params.file1_arg_name} {input.fileR1} {params.file2_arg_name} {input.fileR2} \
+        2>&1 | tee {log}
+        
+        '''
+        # echo 'OK' > {output.ok_file}
         
 rule bismark_sort:
     input:
         bam = str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2.bam"),
+        align_report= str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_SE_report.txt"),
     output:
         tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark/tmp_{sample}"))),
         sam = temp_debugcheck(str(Path(data_path) / "bismark/work/{sample}.sam")),
         bam_out = temp_debugcheck(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam")),
+        align_report= str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"),
         
         # ok_file = str(Path(data_path) / "bismark/{sample}_bismark_sort_ok.txt"),
     conda:
@@ -768,13 +834,15 @@ rule bismark_sort:
     shell:
         '''
         mkdir -p {output.tmp_dir}
-        
+        # sort bam file
         samtools view -@ {threads} -H {input.bam} > {output.sam}  2>&1 | tee {log}
         samtools view -@ {threads} {input.bam} |sort -k5,5nr -k1,1 -s -S30G -T {output.tmp_dir} >> {output.sam} 2>&1 | tee -a {log}
         samtools view -@ {threads} -b {output.sam} -o {output.bam_out} 2>&1 | tee -a {log}
-        '''
         
-
+        # move align report to the main folder (bismark)
+        mv {input.align_report} {output.align_report} 
+        '''
+ 
 # this rule performed only if I1 files are present
 rule bismark_umi_format:
     input: 
@@ -810,14 +878,14 @@ rule bismark_dedup:
             (str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.bam")),
     output:
         dedup_bam = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
             if samples_R1R2_present else \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bam"),
         dedup_report = \
-            (str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplication_report.txt") \
+            (str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplication_report.txt") \
             if samples_R1R2_present else \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplication_report.txt")),
-        dedup_txt = str(Path(data_path) / "bismark/{sample}/{sample}_dedup.txt"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplication_report.txt")),
+        dedup_txt = str(Path(data_path) / "bismark/{sample}_dedup.txt"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -841,39 +909,39 @@ rule bismark_dedup:
 rule bismark_methylation_extractor:
     input: 
         dedup_bam = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
             if samples_R1R2_present else \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bam"),
     output:
         CHG_context = \
-            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         CHH_context = \
-            str(Path(data_path) / "bismark/{sample}/CHH_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/CHH_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/CHH_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/CHH_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         CpG_context = \
-            str(Path(data_path) / "bismark/{sample}/CpG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+            str(Path(data_path) / "bismark/CpG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/CpG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
+            str(Path(data_path) / "bismark/CpG_context_{sample}_R1_bismark_bt2.deduplicated.txt"),
         M_bias = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.M-bias.txt") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.M-bias.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.M-bias.txt"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.M-bias.txt"),
         splitting_report = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated_splitting_report.txt") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated_splitting_report.txt") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated_splitting_report.txt"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated_splitting_report.txt"),
         bedGraph = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bedGraph.gz") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bedGraph.gz") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bedGraph.gz"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bedGraph.gz"),
         bismark_cov = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bismark.cov.gz") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bismark.cov.gz") \
             if samples_R1R2_present else 
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bismark.cov.gz"),
-        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bismark.cov.gz"),
+        # ok_file = str(Path(data_path) / "bismark/{sample}_bismark_methylation_extractor_ok.txt"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -894,12 +962,12 @@ rule bismark_methylation_extractor:
 rule bismark_report:
     input: 
         align_report = \
-            str(Path(data_path) / "bismark/work/{sample}_R1_bismark_bt2_PE_report.txt") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_PE_report.txt") \
             if samples_R1R2_present else \
             str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"),
     output:
-        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_report_ok.txt"),
-        html = str(Path(data_path) / "bismark/{sample}/{sample}_report.html"),
+        # ok_file = str(Path(data_path) / "bismark/{sample}_bismark_report_ok.txt"),
+        html = str(Path(data_path) / "bismark/{sample}_report.html"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -917,15 +985,116 @@ rule bismark_report:
         '''
         # echo 'OK' > {output.ok_file}
 
+rule bismark_summary:
+    input: 
+        align_report = \
+            expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_PE_report.txt") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"), sample=samples_to_process),
+        #CHG_context = \
+        #    expand(str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2_pe.deduplicated.txt") \
+        #    if samples_R1R2_present else 
+        #    str(Path(data_path) / "bismark/CHG_context_{sample}_R1_bismark_bt2.deduplicated.txt"), sample=samples_to_process),
+    output:
+        # ok_file = str(Path(data_path) / "bismark/bismark_summary_ok.txt"),
+        txt = str(Path(data_path) / "bismark/bismark_summary_report.txt"),
+        html = str(Path(data_path) / "bismark/bismark_summary_report.html"),
+    conda:
+        get_conda_env('bismark'),
+    log:
+        str(Path(data_path) / "logs/bismark_summary/bismark_summary.log"),
+    # threads: get_rule_threads ('bismark_summary')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_summary'),
+        walltime = get_rule_walltime('bismark_summary'),
+        # cl_job_suffix = lambda wildcards : wildcards.sample,
+    shell:
+        '''
+        cd "$(dirname "{output.html}")"  # get to the parent dir of the input file
+        
+        bismark2summary 2>&1 | tee {log}
+        '''
+
+rule bismark_lambda_summary:
+    input: 
+        align_report = \
+            expand(str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_PE_report.txt") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_SE_report.txt"), sample=samples_to_process),
+    output:
+        # ok_file = str(Path(data_path) / "bismark/bismark_summary_ok.txt"),
+        txt = str(Path(data_path) / "bismark_lambda/bismark_summary_report.txt"),
+        html = str(Path(data_path) / "bismark_lambda/bismark_summary_report.html"),
+    conda:
+        get_conda_env('bismark'),
+    log:
+        str(Path(data_path) / "logs/bismark_lambda_summary/bismark_lambda_summary.log"),
+    # threads: get_rule_threads ('bismark_summary')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_summary'),
+        walltime = get_rule_walltime('bismark_summary'),
+        # cl_job_suffix = lambda wildcards : wildcards.sample,
+    shell:
+        '''
+        cd "$(dirname "{output.html}")"  # get to the parent dir of the input file
+        
+        bismark2summary 2>&1 | tee {log}
+        '''
+
+rule bismark_4strand_report:
+    input: 
+        align_reports = \
+            expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_PE_report.txt") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"), sample=samples_to_process),
+    output:
+        out_file = str(Path(data_path) / "bismark/bismark_4strand.tsv"),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/bismark_4strand_report/bismark_4strand_report.log"),
+    resources:
+        # mem = next((el for el in [get_config_value ('rules/bismark_4strand_report/memory')] if el is not None), default_rule_memory)  # 10000
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_4strand_report'),
+        # cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        samples = samples_to_process,
+        rule_name = 'bismark_4strand_report',  # required for reporting error from within the script
+        pipeline_warning_file_path = pipeline_warning_file_path,
+    script:
+        "scripts/bismark_4strand.py"
+
+rule bismark_lambda_4strand_report:
+    input: 
+        align_reports = \
+            expand(str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_PE_report.txt") \
+            if samples_R1R2_present else \
+            str(Path(data_path) / "bismark_lambda/{sample}_R1_bismark_bt2_SE_report.txt"), sample=samples_to_process),
+    output:
+        out_file = str(Path(data_path) / "bismark_lambda/bismark_4strand.tsv"),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/bismark_lambda_4strand_report/bismark_lambda_4strand_report.log"),
+    resources:
+        # mem = next((el for el in [get_config_value ('rules/bismark_4strand_report/memory')] if el is not None), default_rule_memory)  # 10000
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_lambda_4strand_report'),
+        # cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        samples = samples_to_process,
+        rule_name = 'bismark_lambda_4strand_report',  # required for reporting error from within the script
+        pipeline_warning_file_path = pipeline_warning_file_path,
+    script:
+        "scripts/bismark_4strand.py"
+
 rule bismark_chr_info:
     input: 
         dedup_bam = \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.bam") \
             if samples_R1R2_present else \
-            str(Path(data_path) / "bismark/{sample}/{sample}_R1_bismark_bt2.deduplicated.bam"),
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.bam"),
     output:
-        chr_info = str(Path(data_path) / "bismark/chr_info/{sample}_chr_info.txt"),
-        # ok_file = str(Path(data_path) / "bismark/{sample}/{sample}_bismark_methylation_extractor_ok.txt"),
+        chr_info = str(Path(data_path) / "chr_info/{sample}_chr_info.txt"),
     conda:
         get_conda_env('bismark'),
     log:
@@ -940,48 +1109,6 @@ rule bismark_chr_info:
         samtools view {input.dedup_bam}|cut -f 3|sort |uniq -c > {output.chr_info} 2>&1 | tee {log}
         '''
         # samtools view $bam|cut -f 3|sort |uniq -c > chr_info/${SID}.txt
-        # echo 'OK' > {output.ok_file}
-
-rule bismark_lambda:
-    input:
-        fileR1 = get_R1_file_path(data_path, 'fastq_raw'),
-        fileR2 = get_R2_file_path(data_path, 'fastq_raw') if samples_R1R2_present else [],
-        valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
-    output:
-        # ok_file = str(Path(data_path) / "bismark_lambda/{sample}/{sample}_ok.txt"),
-        # """        
-        # Temporarily commemnted to avoid re-runing "bismark" step
-        tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "bismark_lambda/tmp_{sample}"))),
-        bam = str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_pe.bam") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2.bam"),
-        align_report= str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_PE_report.txt") if samples_R1R2_present else str(Path(data_path) / "bismark_lambda/{sample}/{sample}_R1_bismark_bt2_SE_report.txt"),
-        # """
-    conda:
-        get_conda_env('bismark'),
-    log:
-        str(Path(data_path) / "logs/bismark_lambda/bismark_lambda_{sample}.log")
-    threads: get_rule_threads ('bismark_lambda')
-    resources:
-        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'bismark_lambda'),  # required for loading memory 
-        cl_job_suffix = lambda wildcards : wildcards.sample,
-        walltime = get_rule_walltime('bismark_lambda'),
-    params:
-        genomeDir = str(Path(motrpac_ref_data_path) / 'misc_data/lambda'),
-        # tmp_dir = str(Path(data_path) / "bismark/tmp_{sample}"),
-        file1_arg_name = "-1" if samples_R1R2_present else "",
-        file2_arg_name = "-2" if samples_R1R2_present else "",
-    shell:
-        '''
-        cd "$(dirname "{output.bam}")"  # get to the parent dir of the output file
-        
-        bismark \
-        {params.genomeDir} \
-        --non_directional \
-        --multicore {threads} \
-        --temp_dir {output.tmp_dir} \
-        {params.file1_arg_name} {input.fileR1} {params.file2_arg_name} {input.fileR2} \
-        2>&1 | tee {log}
-        
-        '''
         # echo 'OK' > {output.ok_file}
 
 rule fastq_raw_validate:
@@ -1090,31 +1217,31 @@ rule UMI_attach_R1:
         gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
         '''
 
-if samples_R1R2_present:
-    rule UMI_attach_R2:
-        input:
-            fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
-            valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
-            valid_file_I1 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
-        output:
-            attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz")),
-            tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq")),
-        conda:
-            get_conda_env(),
-        log:
-            str(Path(data_path) / "logs/UMI_attach_R2/UMI_attach_R2_{sample}.log"),
-        resources:
-            # mem = next((el for el in [get_config_value ('rules/UMI_attach_R2/memory')] if el is not None), default_rule_memory)  # 20000
-            cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R2'),
-            cl_job_suffix = lambda wildcards : wildcards.sample,
-        params:
-            fileI1 = get_I1_file_path(data_path, 'fastq_raw'),
-            umi_script = str(Path(snakemake_path) / "scripts/UMI_attach.awk"),
-        shell:
-            '''
-            zcat {input.fileR2} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
-            gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
-            '''
+# if samples_R1R2_present:
+rule UMI_attach_R2:
+    input:
+        fileR2 = get_R2_file_path(data_path, 'fastq_raw'),
+        valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
+        valid_file_I1 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}_I1"),
+    output:
+        attach_fastq = temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq.gz")),
+        tmp_umi_attach= temp_debugcheck(str(Path(data_path) / "fastq_attach/{sample}_R2.fastq")),
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/UMI_attach_R2/UMI_attach_R2_{sample}.log"),
+    resources:
+        # mem = next((el for el in [get_config_value ('rules/UMI_attach_R2/memory')] if el is not None), default_rule_memory)  # 20000
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'UMI_attach_R2'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        fileI1 = get_I1_file_path(data_path, 'fastq_raw'),
+        umi_script = str(Path(snakemake_path) / "scripts/UMI_attach.awk"),
+    shell:
+        '''
+        zcat {input.fileR2} | {params.umi_script} -v Ifq={params.fileI1} > {output.tmp_umi_attach} 2>&1 | tee {log}
+        gzip -c {output.tmp_umi_attach} > {output.attach_fastq} 2>&1 | tee -a {log}
+        '''
         
 rule trim:
     input:
@@ -1122,12 +1249,11 @@ rule trim:
         fileR2 = get_R2_file_path(data_path, ('fastq_attach' if samples_R1I1_present else 'fastq_raw')) if samples_R1R2_present else [],
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
     output:
-        # ok_file = str(Path(data_path) / "fastq_trim/{sample}_ok.txt"),
-        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
-        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), 
-        report_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
-        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
-        report_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1R2_present else [],
+        # ok_file = str(Path(data_path) / "fastq_trim/temp/{sample}_ok.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_ok.txt"),
+        trim_R1 = temp_debugcheck(str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz")) if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), 
+        report_R1 = str(Path(data_path) / "fastq_trim/temp/{sample}_R1.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
+        trim_R2 = (temp_debugcheck(str(Path(data_path) / "fastq_trim/temp/{sample}_R2_val_2.fq.gz")) if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz")) if samples_R1R2_present else [],
+        report_R2 = (str(Path(data_path) / "fastq_trim/temp/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt"))if samples_R1R2_present else [],
     conda:
         get_conda_env('trim_galore'),
     log:
@@ -1136,39 +1262,96 @@ rule trim:
         cl_job_suffix = lambda wildcards : wildcards.sample,
     params:
         index_adapter = get_config_value ('rules/trim/index_adapter'),
+
         # the following creates a partial bash script that will be inserted to the shell part
+        # note: it adds an addtional argument and adjusts the index2_adapter
         pair_options = \
             "--paired -a2 {}".format( \
             get_config_value ('rules/trim/index2_adapter') if samples_R1I1_present else get_config_value ('rules/trim/index_adapter')) \
             if samples_R1R2_present else "",
+            
         # rename non-paired output of ".gz" to the format of the paired output 
-        rename_trim = 'mv {} {}'.format( \
-            str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"), \
-            str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz")) \
-            if not samples_R1R2_present else "",
+        rename_single_trim = 'mv {} {}'.format( \
+            str(Path(data_path) / "fastq_trim/temp/{sample}_R1_trimmed.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"), \
+            str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") \
+            ) if not samples_R1R2_present else "",
+        # move_report_R1 = 'mv {} {}'.format()
     shell:
         '''
+        # this dir will define the detination of the output of the trim_galore
         trim_dir="$(dirname "{output.trim_R1}")"  # get trim dir from the path of the output file
         
         trim_galore -a {params.index_adapter} {params.pair_options} -o $trim_dir {input.fileR1} {input.fileR2} 2>&1 | tee {log}
-        {params.rename_trim}
+
+        # rename non-paired output file in the next line (can be blank if R1 and R2 files are present)
+        {params.rename_single_trim}
+        
         '''
         # echo 'OK' > {output.ok_file}
 
+rule trim_umi:
+    input:
+        trim_R1 = str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq.gz"),
+        trim_R2 = str(Path(data_path) / "fastq_trim/temp/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+    output:
+        # ok_file = str(Path(data_path) / "fastq_trim/temp/{sample}_trim_umi_ok.txt"),
+        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+    log:
+        str(Path(data_path) / "logs/trim_umi/trim_umi_{sample}.log")
+    conda:
+        get_conda_env('python2'),  # python2_env_name
+    threads: get_rule_threads ('trim_umi')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'trim_umi'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        python = "python",
+        tool = str(Path(snakemake_path) / "scripts/nugen/trimRRBSdiversityAdaptCustomers.py"),
+        pairopt = "-2" if samples_R1R2_present else "",
+        
+        # trimmed fastq files that needs to be moved one level up to the trim folder
+        trim_umi_R1 = str(Path(data_path) / "fastq_trim/temp/{sample}_R1_val_1.fq_trimmed.fq.gz"),
+        trim_umi_R2 = str(Path(data_path) / "fastq_trim/temp/{sample}_R2_val_2.fq_trimmed.fq.gz") if samples_R1R2_present else [],
+        # mv_fastq = 'mv' if samples_R1R2_present else '',
+        
+        # trimmed report files that needs to be moved one level up to the trim folder
+        trim_report_R1 = str(Path(data_path) / "fastq_trim/temp/{sample}_R1.fastq.gz_trimming_report.txt"),
+        trim_report_R2 = str(Path(data_path) / "fastq_trim/temp/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1R2_present else [],
+        # mv_report = 'file={}; mv "$file" "$(dirname "$file")/.."' if samples_R1R2_present else '',
+    shell:
+        '''
+        cd "$(dirname "{input.trim_R1}")"  # get to the parent dir of the input file
+        
+        {params.python} {params.tool} -1 {input.trim_R1} {params.pairopt} {input.trim_R2} 2>&1 | tee {log}
+        
+        # get file names that needs to be moved to trim folder (one level up)
+        trim_umi_R1="{params.trim_umi_R1}"
+        trim_umi_R2="{params.trim_umi_R2}"
+        trim_report_R1="{params.trim_report_R1}"
+        trim_report_R2="{params.trim_report_R2}"
+
+        # validate that file variables not blank and specified file is present and then move it one folder up
+        [ -n "$trim_umi_R1" ] && [ -f "$trim_umi_R1" ] && mv "$trim_umi_R1" "{output.trim_R1}"
+        [ -n "$trim_umi_R2" ] && [ -f "$trim_umi_R2" ] && mv "$trim_umi_R2" "{output.trim_R2}"
+        [ -n "$trim_report_R1" ] && [ -f "$trim_report_R1" ] && mv "$trim_report_R1" "$(dirname "$trim_report_R1")/.."
+        [ -n "$trim_report_R2" ] && [ -f "$trim_report_R2" ] && mv "$trim_report_R2" "$(dirname "$trim_report_R2")/.."
+        '''
+        # echo 'OK' > {output.ok_file}
+        # mv {params.trim_umi_R1} {output.trim_umi_R1}
+        # {params.mv_pairopt} {params.trim_umi_R2} {output.trim_umi_R2}
+
 rule fastqc_trim:
     input:
-        # trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed.fq.gz"),
         trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
         trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
     output:
-        # outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.zip") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed_fastqc.zip"),
-        # outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html") if samples_R1R2_present else str(Path(data_path) / "fastq_trim/{sample}_R1_trimmed_fastqc.html"),
         outR1 = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.zip"),
         outR1_html = str(Path(data_path) / "fastqc_trim/{sample}_R1_val_1_fastqc.html"),
         outR2 = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.zip") if samples_R1R2_present else [],
         outR2_html = str(Path(data_path) / "fastqc_trim/{sample}_R2_val_2_fastqc.html") if samples_R1R2_present else [],
     conda:
-        get_conda_env(),
+        get_conda_env('trim_galore'),
     log:
         str(Path(data_path) / "logs/fastqc_trim/fastqc_trim_{sample}.log")
     resources:
@@ -1182,6 +1365,44 @@ rule fastqc_trim:
         '''
         {params.tool} --outdir {params.out_dir} {input.trim_R1} {input.trim_R2} 2>&1 | tee {log}
         '''
+
+rule phix:
+    input:
+        trim_R1 = str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+        trim_R2 = str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") if samples_R1R2_present else [],
+    output:
+        phix = str(Path(data_path) / "phix/{sample}.txt"),
+        sam_file = temp_debugcheck(str(Path(data_path) / "phix/{sample}.sam"))
+    conda:
+        get_conda_env(),
+    log:
+        str(Path(data_path) / "logs/phix/phix_{sample}.log")
+    threads: get_rule_threads ('phix')
+    resources:
+        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'phix'),
+        cl_job_suffix = lambda wildcards : wildcards.sample,
+    params:
+        tool = "bowtie2",
+        ref_dir = "phix",
+        ref_path = str(Path(motrpac_ref_data_path) / "misc_data"),
+#        sam_file = str(Path(data_path) / "phix/{sample}.sam"),
+        # the following creates a partial bash script that will be inserted to the shell part
+        input_files_bash_script = "-1 " + str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz") + \
+                           " -2 " + str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz") \
+                           if samples_R1R2_present else \
+                           "-U " + str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"),
+    shell:
+        '''
+        {params.tool} \
+        -p {threads} \
+        {params.input_files_bash_script} \
+        -x {params.ref_path}/{params.ref_dir}/{params.ref_dir} \
+        --local \
+        -S {output.sam_file} 2>&1 | tee {log} {output.phix}
+        '''
+
+
+
 
 rule star_align:
     # TODO: There is a possibility of running star_aliqn based on the original fastq files. Future implementation
@@ -1960,7 +2181,6 @@ rule spladder_call_events_long_execution:
 rule chr_info:
     input:
         bam = str(Path(data_path) / "star_align/{sample}/Aligned.sortedByCoord.out.bam"),
-        # star_align_valid_file = str(Path(data_path) / "star_align_validate/valid_{sample}"),
     output:
         chr_info = str(Path(data_path) / "star_align/{sample}/chr_info.txt"),
         tmp_dir = temp_debugcheck(directory(str(Path(data_path) / "star_align/{sample}/chr_info"))),
@@ -2041,43 +2261,6 @@ rule rRNA:
         -S {params.sam_file} 2>&1 | tee {log} {output.rRNA}
         '''
         
-rule phix:
-    input:
-        # it must be the same input as for the star_aliqn rule
-        trimR1 = get_R1_file_path(data_path, 'fastq_trim'),
-        trimR2 = get_R2_file_path(data_path, 'fastq_trim') if samples_R1R2_present else []
-    output:
-        phix = str(Path(data_path) / "phix/{sample}.txt"),
-        sam_file = temp_debugcheck(str(Path(data_path) / "phix/{sample}.sam"))
-    conda:
-        get_conda_env(),
-    log:
-        str(Path(data_path) / "logs/phix/phix_{sample}.log")
-    threads: get_rule_threads ('phix')
-    resources:
-        # mem = next((el for el in [get_config_value ('rules/phix/memory')] if el is not None), default_rule_memory)  # 6000,
-        cl_resources = lambda wildcards, attempt : get_cluster_resources_by_attempt (attempt, 'phix'),
-        cl_job_suffix = lambda wildcards : wildcards.sample,
-    params:
-        tool = "bowtie2",
-        ref_dir = "phix",
-        ref_path = str(Path(motrpac_ref_data_path) / "misc_data"),
-        sam_file = str(Path(data_path) / "phix/{sample}.sam"),
-        # the following creates a partial bash script that will be inserted to the shell part
-        input_files_bash_script = "-1 " + get_R1_file_path(data_path, 'fastq_trim') + \
-                           " -2 " + get_R2_file_path(data_path, 'fastq_trim') \
-                           if samples_R1R2_present else \
-                           "-U " + get_R1_file_path(data_path, 'fastq_trim'),
-    shell:
-        '''
-        {params.tool} \
-        -p {threads} \
-        {params.input_files_bash_script} \
-        -x {params.ref_path}/{params.ref_dir}/{params.ref_dir} \
-        --local \
-        -S {params.sam_file} 2>&1 | tee {log} {output.phix}
-        '''
-
 rule globin:
     input:
         # it must be the same input as for the star_aliqn rule
