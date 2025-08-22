@@ -120,7 +120,7 @@ rules:
     validate_fastqI1_umi_sequence_lenght:
         memory: 10000
         umi_length: 8
-    bismark:
+    bismark_work:
         threads: 16  # Y's code using 24 and dividing it by 4 in the script before calling the tool
         single_host: True
         memory: 15000
@@ -187,119 +187,9 @@ rules:
         memory: 8000  # 6000
         threads: 4
         single_host: True
-    
-    
-    globin:
-        memory: 6000  # use 6000 b/c host=1
-        threads: 6  # 12 # 6
-        single_host: True
-    telescope_sam:
-        memory: 6000  # use 6000 b/c host=1
-        threads: 6  # 12 # 6
-        single_host: True
-        walltime: "24:00"
-    telescope:
-        memory: 3000
-        threads: 1  
-        walltime: "6:00"
-        # single_host: True
-    kallisto:
-        memory: 20000
-        threads: 6
-        single_host: True
-        command: quant
-        index_dir: "kallisto/index"
-        genom_dir: "Ensembl_v96"  # this value overwrites value of alt_sl_ref_data_genom_dir
-        transcript_index: transcriptomeFlt.idx  # transcriptome.idx
-        bootstrap_samples: 20
-    suppa_kallisto: # serves suppa_kalisto and suppa compiled steps
-        memory: 10000
-        command: psiPerEvent  # help info: choose from 'generateEvents', 'psiPerEvent', 'psiPerIsoform', 'diffSplice', 'clusterEvents', 'joinFiles'
-        index_dir: "suppa"
-        genom_dir: "Ensembl_v96flt"  # this value overwrites value of alt_sl_ref_data_genom_dir
-        event_index_name_map: "_{event}_strict.ioe"
-        # even_index_postfix: _strict.ioe
-    suppa_rsem:
-        memory: 10000
-        single_host: True
-        command: psiPerEvent  # help info: choose from 'generateEvents', 'psiPerEvent', 'psiPerIsoform', 'diffSplice', 'clusterEvents', 'joinFiles'
-        index_dir: "suppa"
-        # currently code does not use this value, instead value of "motrpac_ref_data_genom_dir" variable is used
-        # genom_dir: "hg38_gencode_v30"  # this value overwrites value of alt_sl_ref_data_genom_dir
-        event_index_name_map: "_{event}_strict.ioe"
-        # even_index_postfix: _strict.ioe
-    star_align_most_common_read_length:
-        memory: 12000
-        single_host: True
-        max_sample_entries: 10000
-    rmats_b1:
-        memory: 2000
-    rmats_b2:
-        memory: 2000
-    rmats:
-        task: both  # prep
-        memory: 10500 # 30000
-        himem: True
-        single_host: True
-        retries: 2
-        threads: 16  # 6
-        samples_high_count: 500
-        walltime: "72:00"
-    rmats_compilation:
-        memory: 100000
-        himem: True
-        retries: 3
-    suppa_compilation:
-        memory: 35000
-        retries: 3
-    rmats_compilation_psi_table:
-        memory: 100000
-        himem: True
-        retries: 3
-        walltime: "48:00"
-    suppa_compilation_psi_table:
-        memory: 100000
-        himem: True
-        retries: 3
-        walltime: "48:00"
-    qc53:
-        memory: 20000
-        retries: 2
-        MINIMUM_LENGTH: 50
-        RRNA_FRAGMENT_PERCENTAGE: 0.3
-    mark_dup:
-        memory: 60000
-        memory_allocation: "-Xmx35000M"
-        CREATE_INDEX: false  # it was set to true in Motrpac version of this rule
-        VALIDATION_STRINGENCY: SILENT
-        ASSUME_SORT_ORDER: coordinate
-        REMOVE_DUPLICATES: false
     multiqc_fastqc_raw:
         memory: 30000
         retries: 4
     multiqc_fastqc_trim:
         memory: 30000
         retries: 4
-    rsem_validate:
-        memory: 32000  # 15000
-        retries: 4
-    rsem:
-        memory: 16000  # 8000
-        threads: 6
-        single_host: True
-        retries: 4
-        walltime: "72:00"
-    featureCounts:
-        memory: 6000
-        threads: 8  # 6
-        single_host: True
-    UMI_dup:
-        memory: 10000  # 6000
-        threads: 4
-        single_host: True
-    ngscheckmate_prep:
-        memory: 200
-        relative: False  # defines if an absolute or a relative symlink will be created
-    combine_psi_data_suppa:
-        memory: 16000
-
