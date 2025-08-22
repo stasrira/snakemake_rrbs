@@ -448,7 +448,8 @@ rule all:
         phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
         multiqc_fastqc_raw_html = str(Path(data_path) / "multiqc/fastqc_raw.html"),
         
-        # multiqc_fastqc_trim_html = str(Path(data_path) / "multiqc/fastqc_trim.html"),
+        multiqc_fastqc_trim_html = str(Path(data_path) / "multiqc/fastqc_trim.html"),
+        
         # multiqc_post_align = str(Path(data_path) / "multiqc/post_align.html"),
 
         # qc_final = str(Path(data_path) / "qc_info.csv"),
@@ -987,6 +988,7 @@ rule trim:
         report_R1 = str(Path(data_path) / "fastq_trim_temp/{sample}_R1.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
         trim_R2 = (temp_debugcheck(str(Path(data_path) / "fastq_trim_temp/{sample}_R2_val_2.fq.gz")) if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz")) if samples_R1R2_present else [],
         report_R2 = (str(Path(data_path) / "fastq_trim_temp/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt"))if samples_R1R2_present else [],
+        trim_log_file = temp_debugcheck(str(Path(data_path) / "logs/trim/tool_logs/log.{sample}")), # required for multiqc_fastqc_trim rule
     conda:
         get_conda_env('trim_galore'),
     log:
@@ -1018,6 +1020,9 @@ rule trim:
 
         # rename non-paired output file in the next line (can be blank if R1 and R2 files are present)
         {params.rename_single_trim}
+        
+        # copy created log file to the dedicated directory to be used by multiqc
+        cp {log[0]} {output.trim_log_file}
         
         '''
         # echo 'OK' > {output.ok_file}
@@ -1213,22 +1218,19 @@ rule multiqc_fastqc_trim:
         attempt = get_attempt,
         # cl_job_suffix = '',
     params:
-        tool = "multiqc",
-        filename = "fastqc_trim",
-        outdir = str(Path(data_path) / "multiqc"),
-        inputdir1 = str(Path(data_path) / "fastqc_trim"),
-        inputdir2 = str(Path(data_path) / "logs/trim/tool_logs"),
-        ignore_files = '--ignore "*_cluster.out" --ignore "*_cluster.err"'
+        # ignore_files = '--ignore "*_cluster.out" --ignore "*_cluster.err"'
     shell:
         '''
-        {params.tool} \
-        --dirs --force \
-        --filename {params.filename} \
-        --outdir {params.outdir} \
-        {params.inputdir1} {params.inputdir2} \
-        {params.ignore_files} \
-        2>&1 | tee {log}
+        # get dir names out of file paths
+        outdir="$(dirname "{output.multiqc_fastqc_trim_html}")"  # get output dir from the path of the output file
+        inputdir1="$(dirname "{input.multiqc_fastqc_trim[0]}")"  # get input dir from the path of the first input file
+        inputdir2="$(dirname "{input.trim_log_file[0]}")"  # get input dir from the path of the second input file
+        filename=$(basename "{output.multiqc_fastqc_trim_html}" .html) # get the file name without an extension from the multiqc_fastqc_trim_html variable -> fastqc_trim
+        
+        multiqc --dirs --force --filename $filename --outdir $outdir $inputdir1 $inputdir2 2>&1 | tee {log}
+        
         '''
+        
 """
 rule multiqc_post_align:
     input:
