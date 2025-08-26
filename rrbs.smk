@@ -450,9 +450,7 @@ rule all:
         
         multiqc_fastqc_trim_html = str(Path(data_path) / "multiqc/fastqc_trim.html"),
         
-        # multiqc_post_align = str(Path(data_path) / "multiqc/post_align.html"),
-
-        # qc_final = str(Path(data_path) / "qc_info.csv"),
+        qc_final = str(Path(data_path) / "qc_info.csv"),
 
 rule fastqc_raw:
     input:
@@ -737,6 +735,10 @@ rule bismark_summary:
             expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_PE_report.txt") \
             if samples_R1R2_present else \
             str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_SE_report.txt"), sample=samples_to_process),
+        M_bias = \
+            expand(str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2_pe.deduplicated.M-bias.txt") \
+            if samples_R1R2_present else 
+            str(Path(data_path) / "bismark/{sample}_R1_bismark_bt2.deduplicated.M-bias.txt"), sample=samples_to_process),
     output:
         # ok_file = str(Path(data_path) / "bismark/bismark_summary_ok.txt"),
         txt = str(Path(data_path) / "bismark/bismark_summary_report.txt"),
@@ -1267,19 +1269,14 @@ rule multiqc_post_align:
 
 rule qc_final:
     input:
-        star_align_merge_all = str(Path(data_path) / "star_align/star_QC.txt"),
         multiqc_fastqc_raw_txt = str(Path(data_path) / "multiqc/fastqc_raw_data/multiqc_fastqc.txt"),
         multiqc_fastqc_trim_txt = str(Path(data_path) / "multiqc/fastqc_trim_data/multiqc_fastqc.txt"),
         multiqc_fastqc_cutadapt_txt = str(Path(data_path) / "multiqc/fastqc_trim_data/multiqc_cutadapt.txt"),
-        post_align_qc53_txt = str(Path(data_path) / "qc53.txt"),
-        rRNA = expand(str(Path(data_path) / "rRNA/{sample}.txt"), sample=samples_to_process),
         phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
-        globin = expand(str(Path(data_path) / "globin/{sample}.txt"), sample=samples_to_process),
-        chr_info = expand(str(Path(data_path) / "star_align/{sample}/chr_info.txt"), sample=samples_to_process),
-        mark_dup_metrics = expand(str(Path(data_path) / "mark_dup/{sample}.dup_metrics"), sample=samples_to_process),
-        umi_dup = expand(str(Path(data_path) / "star_align/{sample}/dup_log.txt"), sample=samples_to_process) if samples_R1I1_present else [],
+        chr_info = expand(str(Path(data_path) / "chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
         trim_log = expand(str(Path(data_path) / "logs/trim/tool_logs/log.{sample}"), sample=samples_to_process),
-        
+        # mark_dup_metrics = expand(str(Path(data_path) / "mark_dup/{sample}.dup_metrics"), sample=samples_to_process),
+        # umi_dup = expand(str(Path(data_path) / "star_align/{sample}/dup_log.txt"), sample=samples_to_process) if samples_R1I1_present else [],
     output:
         qc_info_csv = str(Path(data_path) / "qc_info.csv"),
         # rds_file = str(Path(data_path) / "snakemake.RData") if debug or create_rds_for_rscripts else [],
@@ -1291,16 +1288,14 @@ rule qc_final:
     params:
         rds_file = str(Path(data_path) / "snakemake.RData"),
         samples = samples_to_process,
+        samples_R1I1_present = samples_R1I1_present,
+        samples_R1R2_present = samples_R1R2_present,
         debug = True if debug or create_rds_for_rscripts else False,
         pipeline_warning_file_path = pipeline_warning_file_path,
-        samples_R1I1_present = samples_R1I1_present,
-        rRNA = str(Path(data_path) / "rRNA"),
         phix = str(Path(data_path) / "phix"),
-        globin = str(Path(data_path) / "globin"),
-        chr_info = str(Path(data_path) / "star_align"),
+        chr_info = str(Path(data_path) / "chr_info"),
+        trim_log = str(Path(data_path) / "logs/trim/tool_logs"),
         mark_dup_metrics = str(Path(data_path) / "mark_dup"),
         umi_dup = str(Path(data_path) / "star_align") if samples_R1I1_present else "",
-        trim_log = str(Path(data_path) / "logs/trim/tool_logs"),
-        samples_R1R2_present = samples_R1R2_present,
     script:
         "scripts/qc.R"
