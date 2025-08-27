@@ -10,17 +10,8 @@ motrpac_ref_data: motrpac_refdata
 motrpac_ref_data_genom_dir: hg38_gencode_v30
 alt_sl_ref_data: AS
 alt_sl_ref_data_genom_dir: # if no value provided, the value of "motrpac_ref_data_genom_dir" will be used
-# run_alternative_splicing: True # if not set to True, all AS steps will be skipped
-# run_rsem: True # if not set to True, all RSEM steps will be skipped
-# run_rmats_turbo: False  # if it is set to True rmats_turbo tool will be used instead of the standard rmats tool. Otherwise the standard rmats tool is used
-# run_rmats_novel: False  # if it is set to True "--novelSS" argument will be included to the rmats command line. Default value is False.
-# run_leafcutter: False  # if not set to True, all leafcutter related steps will be skipped
-# run_spladder: True  # if not set to True, all spladder related steps will be skipped 
-# run_djexpress: True  # if not set to True, all djexpress related steps will be skipped
-# run_spladder_long_execution_events: False  # if not set to True, only limited list of events (outlined in the spladder_events variable in this config) will be used. If set to True, spladder events from spladder_events_long_execution variable will be executed.
-# run_ngscheckmate: True  # set to False to skip NGSCheckMate related rules. Default: True
-# run_feature_counts: False  # if set to True, featureCounts rule will be executed and its outcome will be included to the multiqc_post_align rule outcome
-# run_telescope: True  # if set to True, telescope related rules will be included into the pipeline execution
+
+methcap: False  # defines details of processing of some steps (trim, qc_final)
 
 create_rds_for_rscripts: False  # if set to True, an RDS file will be created for testing participating rules utilizing R scripts
 leafcutter_library_strandedness: XS  # possible values XS, FR; used for intronMotifBAM2junc and leafcutter_cluster_regtools rules

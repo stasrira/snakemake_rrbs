@@ -37,6 +37,7 @@ default_retries = 0  # default retries to be applied for a rule; this could be o
 db_cfg = get_config_value ('database/connection') # Extracts DB connection related setting from config to be passed to the steps requiring DB connectivity
 
 debug = str_to_bool(replace_cfg_with_environment('debug', get_config_value ('debug')))
+methcap = str_to_bool(replace_cfg_with_environment('methcap', get_config_value ('methcap')))
 
 create_rds_for_rscripts = str_to_bool(replace_cfg_with_environment('create_rds_for_rscripts', get_config_value ('create_rds_for_rscripts')))
 print_prerun_info = str_to_bool(replace_cfg_with_environment('print_prerun_info', get_config_value ('print_prerun_info')))
@@ -70,6 +71,11 @@ add_pre_run_info ('Pipeline pre-run started at {}'.format(time.strftime("%Y-%m-%
 
 add_pre_run_info ('help = {} (set to True to display the pipeline help info)'.format(help))
 add_pre_run_info ('debug = {} (set to True to preserve "temp" objects)'.format(debug))
+
+add_pre_run_info ('methcap = {} (set to True to enable methcap related functionality. Default: False)'.format(methcap))
+if methcap:
+    add_pre_run_warning ('Note: Methcap functionality was enabled due to the setting of the "methcap" parameter.')
+
 
 add_pre_run_info ('create_rds_for_rscripts = {} (if set to True, RDS files (being used for manual testing) will be created for all participating R scripts that are executed at the current run)'.format(create_rds_for_rscripts))
 add_pre_run_info ('data_path = {}'.format(data_path))
@@ -985,11 +991,12 @@ rule trim:
         fileR2 = get_R2_file_path(data_path, ('fastq_attach' if samples_R1I1_present else 'fastq_raw')) if samples_R1R2_present else [],
         valid_file_R1R2 = str(Path(data_path) / "fastq_raw_validate/valid_{sample}") if samples_R1R2_present else [],
     output:
-        # ok_file = str(Path(data_path) / "fastq_trim_temp/{sample}_ok.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_ok.txt"),
-        trim_R1 = temp_debugcheck(str(Path(data_path) / "fastq_trim_temp/{sample}_R1_val_1.fq.gz")) if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), 
-        report_R1 = str(Path(data_path) / "fastq_trim_temp/{sample}_R1.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
-        trim_R2 = (temp_debugcheck(str(Path(data_path) / "fastq_trim_temp/{sample}_R2_val_2.fq.gz")) if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz")) if samples_R1R2_present else [],
-        report_R2 = (str(Path(data_path) / "fastq_trim_temp/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt"))if samples_R1R2_present else [],
+        # ok_file = str(Path(data_path) / "fastq_trim_temp/{sample}_ok.txt") if samples_R1I1_present else str(Path(data_path) / "fastq_trim/{sample}_ok.txt
+        # the following conditions for "trim" and "report" files define if the trim_umi step will be invoked; it will be invoked only if I1 files are present and methcap = False
+        trim_R1 = temp_debugcheck(str(Path(data_path) / "fastq_trim_temp/{sample}_R1_val_1.fq.gz")) if samples_R1I1_present and not methcap else str(Path(data_path) / "fastq_trim/{sample}_R1_val_1.fq.gz"), 
+        report_R1 = str(Path(data_path) / "fastq_trim_temp/{sample}_R1.fastq.gz_trimming_report.txt") if samples_R1I1_present and not methcap else str(Path(data_path) / "fastq_trim/{sample}_R1.fastq.gz_trimming_report.txt"),
+        trim_R2 = (temp_debugcheck(str(Path(data_path) / "fastq_trim_temp/{sample}_R2_val_2.fq.gz")) if samples_R1I1_present and not methcap else str(Path(data_path) / "fastq_trim/{sample}_R2_val_2.fq.gz")) if samples_R1R2_present else [],
+        report_R2 = (str(Path(data_path) / "fastq_trim_temp/{sample}_R2.fastq.gz_trimming_report.txt") if samples_R1I1_present and not methcap else str(Path(data_path) / "fastq_trim/{sample}_R2.fastq.gz_trimming_report.txt"))if samples_R1R2_present else [],
         trim_log_file = temp_debugcheck(str(Path(data_path) / "logs/trim/tool_logs/log.{sample}")), # required for multiqc_fastqc_trim rule
     conda:
         get_conda_env('trim_galore'),
@@ -1001,10 +1008,12 @@ rule trim:
         index_adapter = get_config_value ('rules/trim/index_adapter'),
 
         # the following creates a partial bash script that will be inserted to the shell part
-        # note: it adds an addtional argument and adjusts the index2_adapter
+        # note: it adds an addtional argument and selects the index2_adapter based on presense of I1 files and methcap value
         pair_options = \
             "--paired -a2 {}".format( \
-            get_config_value ('rules/trim/index2_adapter') if samples_R1I1_present else get_config_value ('rules/trim/index_adapter')) \
+            get_config_value ('rules/trim/index2_adapter') \
+            if samples_R1I1_present and not methcap else \
+            get_config_value ('rules/trim/index_adapter')) \
             if samples_R1R2_present else "",
             
         # rename non-paired output of ".gz" to the format of the paired output 
@@ -1275,8 +1284,11 @@ rule qc_final:
         phix = expand(str(Path(data_path) / "phix/{sample}.txt"), sample=samples_to_process),
         chr_info = expand(str(Path(data_path) / "chr_info/{sample}_chr_info.txt"), sample=samples_to_process),
         trim_log = expand(str(Path(data_path) / "logs/trim/tool_logs/log.{sample}"), sample=samples_to_process),
-        # mark_dup_metrics = expand(str(Path(data_path) / "mark_dup/{sample}.dup_metrics"), sample=samples_to_process),
-        # umi_dup = expand(str(Path(data_path) / "star_align/{sample}/dup_log.txt"), sample=samples_to_process) if samples_R1I1_present else [],
+        bismark_summary_report = str(Path(data_path) / "bismark/bismark_summary_report.txt"),
+        bismark_lambda_summary_report = str(Path(data_path) / "bismark_lambda/bismark_summary_report.txt"),
+        bismark_4strand = str(Path(data_path) / "bismark/bismark_4strand.tsv"),
+        bismark_lambda_4strand = str(Path(data_path) / "bismark_lambda/bismark_4strand.tsv"),
+        
     output:
         qc_info_csv = str(Path(data_path) / "qc_info.csv"),
         # rds_file = str(Path(data_path) / "snakemake.RData") if debug or create_rds_for_rscripts else [],
