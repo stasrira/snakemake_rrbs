@@ -154,18 +154,6 @@ add_pre_run_info ('motrpac_ref_data_path = {}'.format(motrpac_ref_data_path))
 motrpac_ref_data_genom_dir = replace_cfg_with_environment('motrpac_ref_data_genom_dir', get_config_value ('motrpac_ref_data_genom_dir'))
 add_pre_run_info ('motrpac_ref_data_genom_dir = {}'.format(motrpac_ref_data_genom_dir))
 
-#alternative slicing ref data based on the config
-alt_sl_ref_data_path = str(os.path.realpath(Path(ref_data_path) / get_config_value ('alt_sl_ref_data')))
-# if envir variable was provided, overwrite the config value with that
-alt_sl_ref_data_path = replace_cfg_with_environment('alt_sl_ref_data_path', alt_sl_ref_data_path)
-add_pre_run_info ('alt_sl_ref_data_path = {}'.format(alt_sl_ref_data_path))
-
-alt_sl_ref_data_genom_dir = replace_cfg_with_environment('alt_sl_ref_data_genom_dir', get_config_value ('alt_sl_ref_data_genom_dir')) 
-if alt_sl_ref_data_genom_dir is None or len(alt_sl_ref_data_genom_dir) == 0:
-    # if no config/envir value is provided, use the name given for the motrpac_ref_data_genom_dir
-    alt_sl_ref_data_genom_dir = motrpac_ref_data_genom_dir
-add_pre_run_info ('alt_sl_ref_data_genom_dir = {}'.format(alt_sl_ref_data_genom_dir))
-
 # verify existens of main reference data paths
 if not ref_data_path is None:
     ref_data_path = str(os.path.realpath(Path(ref_data_path)))
@@ -177,11 +165,6 @@ if not motrpac_ref_data_path is None:
     if not os.path.isdir(motrpac_ref_data_path):
         abort_execution = True
         add_pre_run_warning  ('ERROR: The "motrpac_ref_data_path" parameter is not a directory.')
-if not alt_sl_ref_data_path is None:
-    alt_sl_ref_data_path = str(os.path.realpath(Path(alt_sl_ref_data_path)))
-    if not os.path.isdir(alt_sl_ref_data_path):
-        abort_execution = True
-        add_pre_run_warning  ('ERROR: The "alt_sl_ref_data_path" parameter is not a directory.')
 
 if abort_execution:
     email_subject = email_subject_template.format('with ERRORS')

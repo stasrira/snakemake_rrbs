@@ -8,15 +8,12 @@ samplesToIgnore: # by default no samples will be ignored
 ref_data_path: /sc/arion/projects/sealfs01a/german/refdata/
 motrpac_ref_data: motrpac_refdata
 motrpac_ref_data_genom_dir: hg38_gencode_v30
-alt_sl_ref_data: AS
-alt_sl_ref_data_genom_dir: # if no value provided, the value of "motrpac_ref_data_genom_dir" will be used
+# alt_sl_ref_data: AS
+# alt_sl_ref_data_genom_dir: # if no value provided, the value of "motrpac_ref_data_genom_dir" will be used
 
 methcap: False  # defines details of processing of some steps (trim, qc_final)
 
 create_rds_for_rscripts: False  # if set to True, an RDS file will be created for testing participating rules utilizing R scripts
-leafcutter_library_strandedness: XS  # possible values XS, FR; used for intronMotifBAM2junc and leafcutter_cluster_regtools rules
-leafcutter_contrast_db_mapping_code: "primary_contrast"  # mapping code used to retriev contrast value from DB
-leafcutter_contrast_group_count_min: 4  # minimum number of items in a leafcutter contrast group
 
 # metadata_db_study_id: # int value is expected. If set to None (default), default study_id will be identified automatically based on aliquot_id assignments in the DB. If a specific id is given, it will be used to retrive data from the database.
 # metadata_db_center_id: # int value is expected. If set to None (default), default center_id will be identified automatically based on aliquot_id assignments in the DB. If a specific id is given, it will be used to retrive data from the database.

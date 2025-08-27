@@ -760,7 +760,6 @@ def print_help_info():
     help_msg.append ('    - help: displays this message and aborts pipeline execution.')
     help_msg.append ('    - debug: if set to True will instruct snakemake not to delete any files/folder marked as "temp".')
     help_msg.append ('    - data_path: (required) It must contain a path to the data directory that is being processed.')
-    help_msg.append ('    - rmats_contrast_file: (optional) Path to the rmats contrast file (see defult value from the config below). If not provided, the file will be created with the default assignments (b1/b2) as per config setting.')
     help_msg.append ('    - ref_data_path: (optional) It has to contain a path to the main location of the reference data (see defult value from the config below).')
     help_msg.append ('')
     help_msg.append ('Here is the full list of overwritable variables:')
